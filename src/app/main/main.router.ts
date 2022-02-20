@@ -1,13 +1,13 @@
 import { Router } from 'express';
-
-// Export module for registering router in express app
+import { getAddressOperations } from './main';
 export const router: Router = Router();
 
-// Define your routes here
-router.get("/", (req, res) => {
-  res.status(200).send({
-    message: "GET request from main router"
-  });
+router.get('/:address', async (req, res) => {
+  try {
+    res.status(200).send(await getAddressOperations(req.params.address));
+  } catch (error) {
+    console.log(error)
+  }
 });
 
 router.post("/", (req, res) => {
