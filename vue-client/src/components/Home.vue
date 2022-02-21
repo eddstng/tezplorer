@@ -3,7 +3,7 @@
     <v-card class="fill-height" outlined tile>
       <v-form>
         <v-container class="col-md-4 offset-md-4">
-          <v-row class="mt-5 mb-5">
+          <v-row class="mt-5">
             <v-text-field
               v-model="userInputAddress"
               label="ENTER TZ ADDRESS"
@@ -12,13 +12,29 @@
             <v-btn
               class="ml-2"
               height="55px"
-              v-on:click="queryAddressDetails(userInputAddress)"
+              v-on:click="queryRecentOperationsFromAddress(userInputAddress)"
             >
               Query
             </v-btn>
           </v-row>
         </v-container>
       </v-form>
+      <div class="text-center mb-8" v-if="queryResponseOperations">
+        <v-btn
+          class="ml-3 mr-3"
+          height="55px"
+          v-on:click="queryRecentOperationsFromAddress(userInputAddress)"
+        >
+          Prev
+        </v-btn>
+        <v-btn
+          class="ml-3 mr-3"
+          height="55px"
+          v-on:click="queryRecentOperationsFromAddress(userInputAddress)"
+        >
+          Next
+        </v-btn>
+      </div>
       <v-card
         v-for="operation in queryResponseOperations"
         v-bind:key="operation.id"
@@ -35,24 +51,45 @@
                 selectedOperationDetails = operation;
               "
             >
-              <h3>Operation Hash:</h3>
-              <p>{{ operation.hash }}</p>
-              <h3>Block Hash:</h3>
-              <p>{{ operation.block.hash }}</p>
-              <h3>Block Timestamp:</h3>
-              <p>{{ operation.block.timestamp }}</p>
               <h3>Operation Kind:</h3>
-              <p>{{ operation.kind }}</p>
+              <p>{{ operation.kind ? operation.kind : '-' }}</p>
+              <h3>Block Timestamp:</h3>
+              <p>
+                {{
+                  operation.block.timestamp ? operation.block.timestamp : '-'
+                }}
+              </p>
+              <h3>Block Hash:</h3>
+              <p>{{ operation.block.hash ? operation.block.hash : '-' }}</p>
+              <h3>Operation Hash:</h3>
+              <p>{{ operation.hash ? operation.hash : '-' }}</p>
               <h3>Amount:</h3>
-              <p>{{ operation.amount }}</p>
+              <p>{{ operation.amount ? operation.amount : '-' }}</p>
               <h3>Destination:</h3>
-              <p>{{ operation.destination }}</p>
+              <p>{{ operation.destination ? operation.destination : '-' }}</p>
               <h3>Source:</h3>
-              <p>{{ operation.source.address }}</p>
+              <p>
+                {{ operation.source.address ? operation.source.address : '-' }}
+              </p>
             </div>
           </v-list-item-content>
         </v-list-item>
       </v-card>
+      <div class="text-center mt-8 mb-8" v-if="queryResponseOperations">
+        <v-btn
+          class="ml-3 mr-3"
+          height="55px"
+        >
+          Prev
+        </v-btn>
+        <v-btn
+          class="ml-3 mr-3"
+          height="55px"
+          v-on:click="queryRecentOperationsFromAddressNext(this.operationsPaginationDetails)"
+        >
+          Next
+        </v-btn>
+      </div>
     </v-card>
     <v-dialog v-model="operationDetailsDialog" width="1200" font-color="black">
       <v-card>
@@ -88,24 +125,94 @@
 
 <script>
 import axios from 'axios';
+import { orderBy } from 'lodash';
+
 export default {
   data() {
     return {
       queryResponseOperations: null,
       userInputAddress: '',
       selectedOperationDetails: null,
-      operationDetailsDialog: false
+      operationDetailsiDalog: false,
+      operationsPaginationDetails: {
+        address: '',
+        sourceAfterCursor: '',
+        destinationAfterCursor: ''
+      }
     };
   },
   methods: {
-    async queryAddressDetails(addressString) {
-      console.log(addressString);
-      const res = await axios.get(`http://localhost:8080/${addressString}`);
-      if (!res) {
-        console.log('Error occurred.');
+    async queryRecentOperationsFromAddress(addressString) {
+      const operationsWithAddressAsSource = await this.queryOperationsFromAddressAndRelationship(
+        addressString,
+        'source'
+      );
+      const operationsWithAddressAsDestination = await this.queryOperationsFromAddressAndRelationship(
+        addressString,
+        'destination'
+      );
+
+      const totalOperations =
+        operationsWithAddressAsSource.length +
+        operationsWithAddressAsDestination.length;
+
+      let allOperations = [];
+      operationsWithAddressAsSource.forEach(operation => {
+        operation.tezplorer_operation_type = 'source';
+        allOperations.push(operation);
+      });
+      operationsWithAddressAsDestination.forEach(operation => {
+        operation.tezplorer_operation_type = 'destination';
+        allOperations.push(operation);
+      });
+      if (allOperations.length !== totalOperations) {
+        throw new Error(
+          `Error in queryRecentOperationsFromAddress. Expected ${totalOperations} operations but got ${allOperations.length}.`
+        );
       }
-      this.queryResponseOperations = res.data;
-      console.log(res.data);
+
+      if (totalOperations <= 50) {
+        this.queryResponseOperations = orderBy(
+          allOperations,
+          ['block.level', 'hash'],
+          ['desc', 'asc']
+        );
+      } else {
+        allOperations = allOperations.slice(0, 50);
+        this.queryResponseOperations = orderBy(
+          allOperations,
+          ['block.level', 'hash'],
+          ['desc', 'asc']
+        );
+      }
+      this.operationsPaginationDetails.address = addressString;
+      this.setOperationsPaginationDetailsAfterCursors(allOperations);
+    },
+
+    setOperationsPaginationDetailsAfterCursors(operationsArray) {
+      const lastSourceIndex = operationsArray
+        .map(operation => operation.tezplorer_operation_type === 'source')
+        .lastIndexOf(true);
+
+      const lastDestinationIndex = operationsArray
+        .map(operation => operation.tezplorer_operation_type === 'destination')
+        .lastIndexOf(true);
+
+      this.operationsPaginationDetails.sourceAfterCursor = `${operationsArray[lastSourceIndex].hash}:${operationsArray[lastSourceIndex].batch_position}:${operationsArray[lastSourceIndex].internal}`;
+      this.operationsPaginationDetails.destinationAfterCursor = `${operationsArray[lastDestinationIndex].hash}:${operationsArray[lastDestinationIndex].batch_position}:${operationsArray[lastDestinationIndex].internal}`;
+    },
+
+    async queryOperationsFromAddressAndRelationship(
+      addressString,
+      relationship
+    ) {
+      const res = await axios.get(
+        `http://localhost:8080/operations/${addressString}/${relationship}`
+      );
+      if (!res) {
+        throw new Error('Error');
+      }
+      return res.data;
     }
   }
 };
