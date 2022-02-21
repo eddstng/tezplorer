@@ -1,10 +1,15 @@
 import { Router } from 'express';
-import { getAddressOperations } from './main';
+import { getOperationsFromAddressDesc } from './main';
 export const router: Router = Router();
 
-router.get('/:address', async (req, res) => {
+router.get('/operations/:address/:relationshipType', async (req, res) => {
   try {
-    res.status(200).send(await getAddressOperations(req.params.address));
+    const relationshipType = req.params.relationshipType
+    if (relationshipType !== 'destination' && relationshipType !== 'source') {
+      res.status(400).send("Must declare either 'destination' or 'source' as relationshipType. \n `/operations/:address/:relationshipType`")
+    } else {
+      res.status(200).send(await getOperationsFromAddressDesc(req.params.address, relationshipType));
+    }
   } catch (error) {
     console.log(error)
   }
