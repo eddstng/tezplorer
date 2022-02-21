@@ -76,16 +76,15 @@
         </v-list-item>
       </v-card>
       <div class="text-center mt-8 mb-8" v-if="queryResponseOperations">
-        <v-btn
-          class="ml-3 mr-3"
-          height="55px"
-        >
+        <v-btn class="ml-3 mr-3" height="55px">
           Prev
         </v-btn>
         <v-btn
           class="ml-3 mr-3"
           height="55px"
-          v-on:click="queryRecentOperationsFromAddressNext(this.operationsPaginationDetails)"
+          v-on:click="
+            queryRecentOperationsFromAddressAfter()
+          "
         >
           Next
         </v-btn>
@@ -189,6 +188,54 @@ export default {
       this.setOperationsPaginationDetailsAfterCursors(allOperations);
     },
 
+    async queryRecentOperationsFromAddressAfter() {
+      const operationsWithAddressAsSource = await this.queryOperationsFromAddressAndRelationshipAfter(
+         this.operationsPaginationDetails.address,
+        'source',
+        this.operationsPaginationDetails.sourceAfterCursor
+      );
+      const operationsWithAddressAsDestination = await this.queryOperationsFromAddressAndRelationshipAfter(
+         this.operationsPaginationDetails.address,
+        'destination',
+        this.operationsPaginationDetails.sourceAfterCursor
+      );
+
+      const totalOperations =
+        operationsWithAddressAsSource.length +
+        operationsWithAddressAsDestination.length;
+
+      let allOperations = [];
+      operationsWithAddressAsSource.forEach(operation => {
+        operation.tezplorer_operation_type = 'source';
+        allOperations.push(operation);
+      });
+      operationsWithAddressAsDestination.forEach(operation => {
+        operation.tezplorer_operation_type = 'destination';
+        allOperations.push(operation);
+      });
+      if (allOperations.length !== totalOperations) {
+        throw new Error(
+          `Error in queryRecentOperationsFromAddress. Expected ${totalOperations} operations but got ${allOperations.length}.`
+        );
+      }
+
+      if (totalOperations <= 50) {
+        this.queryResponseOperations = orderBy(
+          allOperations,
+          ['block.level', 'hash'],
+          ['desc', 'asc']
+        );
+      } else {
+        allOperations = allOperations.slice(0, 50);
+        this.queryResponseOperations = orderBy(
+          allOperations,
+          ['block.level', 'hash'],
+          ['desc', 'asc']
+        );
+      }
+      this.setOperationsPaginationDetailsAfterCursors(allOperations);
+    },
+
     setOperationsPaginationDetailsAfterCursors(operationsArray) {
       const lastSourceIndex = operationsArray
         .map(operation => operation.tezplorer_operation_type === 'source')
@@ -208,6 +255,19 @@ export default {
     ) {
       const res = await axios.get(
         `http://localhost:8080/operations/${addressString}/${relationship}`
+      );
+      if (!res) {
+        throw new Error('Error');
+      }
+      return res.data;
+    },
+    async queryOperationsFromAddressAndRelationshipAfter(
+      addressString,
+      relationship,
+      cursor
+    ) {
+      const res = await axios.get(
+        `http://localhost:8080/operations/${addressString}/${relationship}/after/${cursor}`
       );
       if (!res) {
         throw new Error('Error');
