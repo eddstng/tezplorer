@@ -428,3 +428,97 @@ export async function getRecentOperationsFromAddress(address: string) {
   const sortedArrayWithAllOperationsRetrieved = orderBy(arrayWithAllOperationsRetrieved, ["block.level", "hash"], ["desc", "asc"])
   return (sortedArrayWithAllOperationsRetrieved)
 }
+
+
+export async function getTokens() {
+  // Set up Tezgraph GraphQL Query
+  const endpoint = "https://mainnet.tezgraph.tez.ie/graphql";
+  const graphqlQuery = {
+    "operationName": "AccountQuery",
+    "query": `query BigmapQuery {
+      bigmaps(filter: { annots: "%ledger" }, first: 50) {
+        total_count
+        edges {
+          cursor
+          node {
+            id
+            annots
+            annots
+            block {
+              hash
+              timestamp
+              level
+            }
+            keys(first: 1) {
+              edges {
+                node {
+                  current_value {
+                    kind
+                    contract {
+                      address
+                      contract_metadata {
+                        name
+                        description
+                        version
+                        authors
+                        homepage
+                      }
+                      operations(
+                        first: 1
+                        filter: { kind: origination, relationship_type: contract }
+                      ) {
+                        edges {
+                          node {
+                            ... on OriginationRecord {
+                              contract {
+                                address
+                              }
+                            }
+                            kind
+                            source {
+                              address
+                            }
+                            hash
+                          }
+                        }
+                      }
+                    }
+                    source {
+                      address
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    `,
+    "variables": {}
+  };
+  const headers = {
+    "content-type": "application/json",
+    "Authorization": "<token>"
+  };
+  const response = axios({
+    url: endpoint,
+    method: 'post',
+    headers: headers,
+    data: graphqlQuery
+  });
+
+  // Run Tezgraph Query
+  const axiosResponse: resData = (await response).data
+  const axiosResponseData = axiosResponse.data
+  const axiosResponseErrors = axiosResponse.errors
+
+  // If Tezgraph returns an error, return error. 
+  if (axiosResponseErrors !== undefined) {
+    return axiosResponseErrors
+  }
+
+
+
+
+}
