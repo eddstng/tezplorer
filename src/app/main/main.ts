@@ -195,10 +195,6 @@ export async function getOperationsFromAddressDesc(address: string, relationship
   const axiosResponseData = axiosResponse.data
   const axiosResponseErrors = axiosResponse.errors
 
-
-
-  console.log(axiosResponseData.accounts.edges[0].node.operations)
-
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {
     return axiosResponseErrors
@@ -367,10 +363,6 @@ export async function getOperationsFromAddressDescAfter(address: string, relatio
   const axiosResponse: resData = (await response).data
   const axiosResponseData = axiosResponse.data
   const axiosResponseErrors = axiosResponse.errors
-
-
-
-  console.log(axiosResponseData.accounts.edges[0].node.operations)
 
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {

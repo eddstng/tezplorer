@@ -1,16 +1,16 @@
 <template>
   <v-app>
     <template>
-      <Home />
+      <Operations />
     </template>
   </v-app>
 </template>
 
 <script>
-import Home from './components/Home';
+import Operations from './components/Operations';
 export default {
   components: {
-    Home
+    Operations
   },
   data() {
     return {

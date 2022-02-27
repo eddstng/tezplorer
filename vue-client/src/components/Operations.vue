@@ -82,9 +82,7 @@
         <v-btn
           class="ml-3 mr-3"
           height="55px"
-          v-on:click="
-            queryRecentOperationsFromAddressAfter()
-          "
+          v-on:click="queryRecentOperationsFromAddressAfter()"
         >
           Next
         </v-btn>
@@ -150,7 +148,6 @@ export default {
         addressString,
         'destination'
       );
-
       const totalOperations =
         operationsWithAddressAsSource.length +
         operationsWithAddressAsDestination.length;
@@ -170,32 +167,28 @@ export default {
         );
       }
 
-      if (totalOperations <= 50) {
-        this.queryResponseOperations = orderBy(
-          allOperations,
-          ['block.level', 'hash'],
-          ['desc', 'asc']
-        );
-      } else {
-        allOperations = allOperations.slice(0, 50);
-        this.queryResponseOperations = orderBy(
-          allOperations,
-          ['block.level', 'hash'],
-          ['desc', 'asc']
-        );
+      const orderedOperations = orderBy(
+        allOperations,
+        ['block.level', 'hash'],
+        ['desc', 'asc'] 
+      );
+
+      if (totalOperations > 10) {
+        this.queryResponseOperations = orderedOperations.slice(0, 10);
       }
+
       this.operationsPaginationDetails.address = addressString;
       this.setOperationsPaginationDetailsAfterCursors(allOperations);
     },
 
     async queryRecentOperationsFromAddressAfter() {
       const operationsWithAddressAsSource = await this.queryOperationsFromAddressAndRelationshipAfter(
-         this.operationsPaginationDetails.address,
+        this.operationsPaginationDetails.address,
         'source',
         this.operationsPaginationDetails.sourceAfterCursor
       );
       const operationsWithAddressAsDestination = await this.queryOperationsFromAddressAndRelationshipAfter(
-         this.operationsPaginationDetails.address,
+        this.operationsPaginationDetails.address,
         'destination',
         this.operationsPaginationDetails.sourceAfterCursor
       );
@@ -219,19 +212,14 @@ export default {
         );
       }
 
-      if (totalOperations <= 50) {
-        this.queryResponseOperations = orderBy(
-          allOperations,
-          ['block.level', 'hash'],
-          ['desc', 'asc']
-        );
-      } else {
-        allOperations = allOperations.slice(0, 50);
-        this.queryResponseOperations = orderBy(
-          allOperations,
-          ['block.level', 'hash'],
-          ['desc', 'asc']
-        );
+      const orderedOperations = orderBy(
+        allOperations,
+        ['block.level', 'hash'],
+        ['desc', 'asc'] 
+      );
+
+      if (totalOperations > 10) {
+        this.queryResponseOperations = orderedOperations.slice(0, 10);
       }
       this.setOperationsPaginationDetailsAfterCursors(allOperations);
     },
