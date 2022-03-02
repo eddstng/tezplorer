@@ -27,6 +27,52 @@ type operationNode = {
   prim: string,
 };
 
+type tokenNode = {
+  id: string, 
+  annots: string,
+  block: {
+    hash: string,
+    timestamp: string,
+    level: number,
+  },
+  keys: {
+    edges: {
+      node: {
+        current_value: {
+          kind: string,
+          contract: {
+            address: string,
+            contract_metadata: {
+              name: string,
+              description: string, 
+              version: string,
+              authors: string[], 
+              homepage: string,
+            },
+            operations: {
+              edges: {node: {
+                contract: {
+                  address: string,
+                },
+                kind: string,
+                source: {
+                  address: string,
+                },
+                hash: string
+                batch_position: string,
+                internal: string,
+              }}[]
+            }
+          },
+          source: {
+            address: string,
+          }
+        }
+      }
+    }[]
+  }
+};
+
 type resData = {
   data: {
     accounts: {
@@ -42,13 +88,44 @@ type resData = {
         },
       }[],
     },
+    bigmaps: {
+      edges: {
+              node: tokenNode,
+      }[],
+    },
   },
   errors?: {
     message: string
   }[]
-
 }
 
+type TokenData = {
+  cursor: string,
+  annots: string,
+  block: {
+    hash: string,
+    timestamp: string,
+    level: string
+  },
+  contract: {
+    address: string,
+    contract_metadata: {
+      name: string,
+      description: string,
+      version: string,
+      authors: string,
+    }
+  },
+  origination_operation: {
+    contract_address: string,
+    kind: string,
+    creator_address: string,
+    operation_hash: string,
+    batch_position: string,
+    internal_position: string,
+  }
+  // TO DO: Add an array of all bigmap ids.
+}
 
 export async function getOperationsFromAddressDesc(address: string, relationshipType: "destination" | "source") {
   // Set up Tezgraph GraphQL Query
@@ -431,12 +508,13 @@ export async function getRecentOperationsFromAddress(address: string) {
 
 
 export async function getTokens() {
+  console.log('intokens')
   // Set up Tezgraph GraphQL Query
-  const endpoint = "https://mainnet.tezgraph.tez.ie/graphql";
+  const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
   const graphqlQuery = {
-    "operationName": "AccountQuery",
+    "operationName": "BigmapQuery",
     "query": `query BigmapQuery {
-      bigmaps(filter: { annots: "%ledger" }, first: 50) {
+      bigmaps(filter: { annots: "%ledger" }, first: 15) {
         total_count
         edges {
           cursor
@@ -479,6 +557,8 @@ export async function getTokens() {
                               address
                             }
                             hash
+                            batch_position
+                            internal
                           }
                         }
                       }
@@ -508,8 +588,10 @@ export async function getTokens() {
     data: graphqlQuery
   });
 
+  
   // Run Tezgraph Query
   const axiosResponse: resData = (await response).data
+
   const axiosResponseData = axiosResponse.data
   const axiosResponseErrors = axiosResponse.errors
 
@@ -518,7 +600,38 @@ export async function getTokens() {
     return axiosResponseErrors
   }
 
+  const tokensQueriesData = axiosResponseData.bigmaps.edges
 
+  const tokenDataArray: any[] = [];
 
+  tokensQueriesData.forEach((token) => {
+    let contractMetadata = null;
+    let originationOperation = null;
+    if (token.node.keys.edges.length > 0) {
+      contractMetadata = token.node.keys.edges[0].node.current_value.contract.contract_metadata ?? null;
+      originationOperation = token.node.keys.edges[0].node.current_value.contract.operations.edges[0] ?? null
+    }
+    const tokenData = {
+      cursor: token.node.id,
+      annots: token.node.annots,
+      block: token.node.block,
+      contract: {
+        address: token.node.keys.edges[0] !== undefined ? token.node.keys.edges[0].node.current_value.contract.address : null,
+        contract_metadata: contractMetadata,
+      },
+      origination_operation: {
+        contract_address: originationOperation ? originationOperation.node.contract.address : null,
+        kind: originationOperation ? originationOperation.node.kind : null,
+        creator_address: originationOperation ? originationOperation.node.source.address : null,
+        operation_hash: originationOperation ? originationOperation.node.hash : null,
+        batch_position: originationOperation ? originationOperation.node.batch_position : null,
+        internal_position: originationOperation ? originationOperation.node.internal : null,
+      }
+    }
+    tokenDataArray.push(tokenData);
+    console.log(tokenData)
+  })
+
+return tokenDataArray
 
 }

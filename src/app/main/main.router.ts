@@ -32,6 +32,7 @@ router.get('/tokens', async (req, res) => {
   try {
     res.status(200).send(await getTokens());
   } catch (error) {
+    console.log(error)
 
   }
 });
