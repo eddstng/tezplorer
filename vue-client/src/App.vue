@@ -1,16 +1,18 @@
 <template>
   <v-app>
     <template>
-      <Operations />
+      <!-- <Operations /> -->
+      <Tokens />
     </template>
   </v-app>
 </template>
 
 <script>
-import Operations from './components/Operations';
+// import Operations from './components/Operations';
+import Tokens from './components/Tokens';
 export default {
   components: {
-    Operations
+    Tokens
   },
   data() {
     return {
