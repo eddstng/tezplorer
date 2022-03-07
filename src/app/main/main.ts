@@ -495,6 +495,129 @@ export async function getRecentOperationsFromAddress(address: string) {
 }
 
 
+export async function getTokensAfter(afterCursor: string) {
+  // Set up Tezgraph GraphQL Query
+  const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
+  const graphqlQuery = {
+    "operationName": "BigmapQuery",
+    "query": `query BigmapQuery {
+      bigmaps(filter: { annots: "%ledger" }, first: 15 after: "${afterCursor}") {
+        total_count
+        page_info {
+          end_cursor
+          start_cursor
+          has_next_page
+          has_previous_page
+        }
+        edges {
+          cursor
+          node {
+            id
+            annots
+            annots
+            block {
+              hash
+              timestamp
+              level
+            }
+            contract {
+              address
+              contract_metadata {
+                name
+                description
+                version
+                authors
+                homepage
+              }
+              operations(
+                first: 1
+                filter: { kind: origination, relationship_type: contract }
+              ) {
+                edges {
+                  node {
+                    ... on OriginationRecord {
+                      contract {
+                        address
+                      }
+                    }
+                    kind
+                    source {
+                      address
+                    }
+                    hash
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+      `,
+    "variables": {}
+  };
+  const headers = {
+    "content-type": "application/json",
+    "Authorization": "<token>"
+  };
+  const response = axios({
+    url: endpoint,
+    method: 'post',
+    headers: headers,
+    data: graphqlQuery
+  });
+
+
+  // Run Tezgraph Query
+  const axiosResponse: resData = (await response).data
+
+  const axiosResponseData = axiosResponse.data
+  const axiosResponseErrors = axiosResponse.errors
+
+  // If Tezgraph returns an error, return error. 
+  if (axiosResponseErrors !== undefined) {
+    return axiosResponseErrors
+  }
+
+  const tokensQueriesData = axiosResponseData.bigmaps.edges
+
+  const tokenDataArray: any[] = [];
+
+  tokensQueriesData.forEach((token) => {
+    let contractMetadata = null;
+    let originationOperation = null;
+    if (token.node.contract) {
+      contractMetadata = token.node.contract.contract_metadata ?? null;
+      originationOperation = token.node.contract.operations.edges[0] ?? null
+    }
+    const tokenData = {
+      cursor: token.node.id,
+      annots: token.node.annots,
+      block: token.node.block,
+      contract: {
+        address: token.node.contract.address,
+        contract_metadata: contractMetadata,
+      },
+      origination_operation: {
+        contract_address: originationOperation ? originationOperation.node.contract.address : null,
+        kind: originationOperation ? originationOperation.node.kind : null,
+        creator_address: originationOperation ? originationOperation.node.source.address : null,
+        operation_hash: originationOperation ? originationOperation.node.hash : null,
+        batch_position: originationOperation ? originationOperation.node.batch_position : null,
+        internal_position: originationOperation ? originationOperation.node.internal : null,
+      },
+      page_info: {
+        start_cursor: null,
+        end_cursor: null,
+      }
+    }
+    tokenDataArray.push(tokenData);
+  })
+
+  return tokenDataArray
+
+}
+
 export async function getTokens() {
   console.log('intokens')
   // Set up Tezgraph GraphQL Query

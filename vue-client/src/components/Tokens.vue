@@ -15,7 +15,7 @@
           </v-row>
         </v-container>
       </v-form>
-      <div class="text-center mb-8" v-if="queryResponseOperations">
+      <div class="text-center mb-8" v-if="queryResponseTokens">
         <v-btn
           class="ml-3 mr-3"
           height="55px"
@@ -26,13 +26,13 @@
         <v-btn
           class="ml-3 mr-3"
           height="55px"
-          v-on:click="queryRecentOperationsFromAddress(userInputAddress)"
+          v-on:click="queryTokensNext()"
         >
           Next
         </v-btn>
       </div>
       <v-card
-        v-for="operation in queryResponseOperations"
+        v-for="operation in queryResponseTokens"
         v-bind:key="operation.id"
         class="mx-auto"
         outlined
@@ -94,14 +94,14 @@
           </v-list-item-content>
         </v-list-item>
       </v-card>
-      <div class="text-center mt-8 mb-8" v-if="queryResponseOperations">
+      <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
         <v-btn class="ml-3 mr-3" height="55px">
           Prev
         </v-btn>
         <v-btn
           class="ml-3 mr-3"
           height="55px"
-          v-on:click="queryRecentOperationsFromAddressAfter()"
+          v-on:click="queryTokensNext()"
         >
           Next
         </v-btn>
@@ -191,7 +191,7 @@ export default {
   data() {
     return {
       operationDetailsDialog: false,
-      queryResponseOperations: null,
+      queryResponseTokens: null,
       userInputAddress: '',
       tokenBigmapDetails: null,
       operationDetailsiDalog: false,
@@ -208,7 +208,18 @@ export default {
       if (!res) {
         throw new Error('Error');
       }
-      this.queryResponseOperations = res.data;
+      this.queryResponseTokens = res.data;
+      return res.data;
+    },
+      async queryTokensNext() {
+      if (this.queryResponseTokens[this.queryResponseTokens.length -1].cursor === undefined) {
+        throw new Error('Error');
+      }
+      const res = await axios.get(`http://localhost:8080/tokens/after/${this.queryResponseTokens[this.queryResponseTokens.length -1].cursor}`);
+      if (!res) {
+        throw new Error('Error');
+      }
+      this.queryResponseTokens = res.data;
       return res.data;
     }
   }

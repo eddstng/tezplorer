@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getOperationsFromAddressDesc, getOperationsFromAddressDescAfter, getTokens } from './main';
+import { getOperationsFromAddressDesc, getOperationsFromAddressDescAfter, getTokens, getTokensAfter } from './main';
 export const router: Router = Router();
 
 router.get('/operations/:address/:relationshipType', async (req, res) => {
@@ -31,6 +31,15 @@ router.get('/operations/:address/:relationshipType/after/:cursor', async (req, r
 router.get('/tokens', async (req, res) => {
   try {
     res.status(200).send(await getTokens());
+  } catch (error) {
+    console.log(error)
+
+  }
+});
+
+router.get('/tokens/after/:cursor', async (req, res) => {
+  try {
+    res.status(200).send(await getTokensAfter(req.params.cursor));
   } catch (error) {
     console.log(error)
 
