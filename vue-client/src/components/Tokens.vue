@@ -9,11 +9,7 @@
               label="ENTER TZ ADDRESS"
               outlined
             ></v-text-field>
-            <v-btn
-              class="ml-2"
-              height="55px"
-              v-on:click="queryTokens()"
-            >        
+            <v-btn class="ml-2" height="55px" v-on:click="queryTokens()">
               Tokens
             </v-btn>
           </v-row>
@@ -42,53 +38,58 @@
         outlined
         max-width="800px"
       >
-       <v-list-item three-line>
+        <v-list-item three-line>
           <v-list-item-content>
             <div
               class="text-overline"
               v-on:click="
+                operationDetailsDialog = false;
                 operationDetailsDialog = true;
-                selectedOperationDetails = operation;
+                tokenBigmapDetails = operation;
               "
             >
-<h3> cursor </h3>
-              <p>{{ operation.cursor ? operation.cursor : '-' }}</p>
+              <!-- <h3>cursor</h3>
+              <p>{{ operation.cursor ? operation.cursor : '-' }}</p> -->
+              <h3>address</h3>
+              <p>
+                {{
+                  operation.contract.address ? operation.contract.address : '-'
+                }}
+              </p>
 
-<h3> annots </h3>
+              <h3>annots</h3>
               <p>{{ operation.annots ? operation.annots : '-' }}</p>
-              
-              <h3> hash </h3>
+
+              <h3>block hash</h3>
               <p>{{ operation.block.hash ? operation.block.hash : '-' }}</p>
-              
-              <h3> timestamp </h3>
-              <p>{{ operation.block.timestamp ? operation.block.timestamp : '-' }}</p>
-              
-              <h3> level </h3>
+
+              <h3>block timestamp</h3>
+              <p>
+                {{
+                  operation.block.timestamp ? operation.block.timestamp : '-'
+                }}
+              </p>
+
+              <h3>block level</h3>
               <p>{{ operation.block.level ? operation.block.level : '-' }}</p>
-              
-              <h3> address </h3>
-              <p>{{ operation.contract.address ? operation.contract.address : '-' }}</p>
-              
-              <h3> contract_metadata </h3>
-              <p>{{ operation.contract.contract_metadata ? operation.contract.contract_metadata : '-' }}</p>
-              
-              <h3> contract_address </h3>
-              <p>{{ operation.origination_operation.contract_address ? operation.origination_operation.contract_address : '-' }}</p>
-              
-              <h3> kind </h3>
-              <p>{{ operation.origination_operation.kind ? operation.origination_operation.kind : '-' }}</p>
-              
-              <h3> creator_address </h3>
-              <p>{{ operation.origination_operation.creator_address ? operation.origination_operation.creator_address : '-' }}</p>
-              
-              <h3> operation_hash </h3>
-              <p>{{ operation.origination_operation.operation_hash ? operation.origination_operation.operation_hash : '-' }}</p>
-              
-              <h3> batch_position </h3>
-              <p>{{ operation.origination_operation.batch_position ? operation.origination_operation.batch_position : '-' }}</p>
-              
-              <h3> internal_position </h3>
-              <p>{{ operation.origination_operation.internal_position ? operation.origination_operation.internal_position : '-' }}</p>
+
+              <div v-if="operation.contract.contract_metadata">
+                <h3>contract_metadata</h3>
+                <p>Name: {{ operation.contract.contract_metadata.name }}</p>
+                <p>
+                  Description:
+                  {{ operation.contract.contract_metadata.description }}
+                </p>
+                <p>
+                  Version: {{ operation.contract.contract_metadata.version }}
+                </p>
+                <p>
+                  Authors: {{ operation.contract.contract_metadata.authors }}
+                </p>
+                <p>
+                  Homepage: {{ operation.contract.contract_metadata.homepage }}
+                </p>
+              </div>
             </div>
           </v-list-item-content>
         </v-list-item>
@@ -114,15 +115,60 @@
 
         <v-card-text class="black--text">
           <div
-            v-for="(value, key) in selectedOperationDetails"
-            v-bind:key="key"
+            v-for="(tokenBigmapDetailValue,
+            tokenBigmapDetailKey) in tokenBigmapDetails"
+            v-bind:key="tokenBigmapDetailKey"
             class="text-overline"
           >
-            <h3>{{ key }}</h3>
-            <p>{{ value }}</p>
+            <p>--------------------------------------------------------------------</p>
+
+            <h3>{{ tokenBigmapDetailKey }}</h3>
+            <div
+              v-if="
+                typeof tokenBigmapDetailValue === 'object' &&
+                  tokenBigmapDetailValue !== null
+              "
+            >
+              <div
+                v-for="(nestedTokenObjectValue,
+                nestedTokenObjectKey) in tokenBigmapDetailValue"
+                v-bind:key="nestedTokenObjectValue"
+                class="text-overline"
+              >
+                <div
+                  v-if="
+                    typeof nestedTokenObjectValue === 'object' &&
+                      nestedTokenObjectValue !== null
+                  "
+                >
+                  <h3>{{ nestedTokenObjectKey }}</h3>
+                  <div
+                    v-for="(nestedNestedTokenObjectValue,
+                    nestedNestedTokenobjectKey) in nestedTokenObjectValue"
+                    v-bind:key="nestedNestedTokenObjectValue"
+                    class="text-overline"
+                  >
+                    <h5>{{ nestedNestedTokenobjectKey }}</h5>
+                    <p>{{ nestedNestedTokenObjectValue }}</p>
+                  </div>
+                </div>
+                <div v-else>
+                  <h5>{{ nestedTokenObjectKey }}</h5>
+                  <p>
+                    {{
+                      nestedTokenObjectValue ? nestedTokenObjectValue : 'null'
+                    }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div v-else>
+              <p>{{ tokenBigmapDetailValue }}</p>
+            </div>
           </div>
+          <p>--------------------------------------------------------------------</p>
           <h3>Raw JSON:</h3>
-          <p>{{ selectedOperationDetails }}</p>
+          <p>{{ tokenBigmapDetails }}</p>
         </v-card-text>
 
         <v-divider></v-divider>
@@ -144,9 +190,10 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      operationDetailsDialog: false,
       queryResponseOperations: null,
       userInputAddress: '',
-      selectedOperationDetails: null,
+      tokenBigmapDetails: null,
       operationDetailsiDalog: false,
       operationsPaginationDetails: {
         address: '',
@@ -156,11 +203,8 @@ export default {
     };
   },
   methods: {
-    async queryTokens(
-    ) {
-      const res = await axios.get(
-        `http://localhost:8080/tokens`
-      ); 
+    async queryTokens() {
+      const res = await axios.get(`http://localhost:8080/tokens`);
       if (!res) {
         throw new Error('Error');
       }

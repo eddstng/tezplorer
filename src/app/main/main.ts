@@ -35,41 +35,29 @@ type tokenNode = {
     timestamp: string,
     level: number,
   },
-  keys: {
-    edges: {
-      node: {
-        current_value: {
-          kind: string,
-          contract: {
-            address: string,
-            contract_metadata: {
-              name: string,
-              description: string, 
-              version: string,
-              authors: string[], 
-              homepage: string,
-            },
-            operations: {
-              edges: {node: {
-                contract: {
-                  address: string,
-                },
-                kind: string,
-                source: {
-                  address: string,
-                },
-                hash: string
-                batch_position: string,
-                internal: string,
-              }}[]
-            }
-          },
-          source: {
-            address: string,
-          }
-        }
-      }
-    }[]
+  contract: {
+    address: string,
+    contract_metadata: {
+      name: string,
+      description: string, 
+      version: string,
+      authors: string[], 
+      homepage: string,
+    },
+    operations: {
+      edges: {node: {
+        contract: {
+          address: string,
+        },
+        kind: string,
+        source: {
+          address: string,
+        },
+        hash: string
+        batch_position: string,
+        internal: string,
+      }}[]
+    }
   }
 };
 
@@ -527,45 +515,31 @@ export async function getTokens() {
               timestamp
               level
             }
-            keys(first: 1) {
-              edges {
-                node {
-                  current_value {
-                    kind
-                    contract {
-                      address
-                      contract_metadata {
-                        name
-                        description
-                        version
-                        authors
-                        homepage
-                      }
-                      operations(
-                        first: 1
-                        filter: { kind: origination, relationship_type: contract }
-                      ) {
-                        edges {
-                          node {
-                            ... on OriginationRecord {
-                              contract {
-                                address
-                              }
-                            }
-                            kind
-                            source {
-                              address
-                            }
-                            hash
-                            batch_position
-                            internal
-                          }
-                        }
+            contract {
+              address
+              contract_metadata {
+                name
+                description
+                version
+                authors
+                homepage
+              }
+              operations(
+                first: 1
+                filter: { kind: origination, relationship_type: contract }
+              ) {
+                edges {
+                  node {
+                    ... on OriginationRecord {
+                      contract {
+                        address
                       }
                     }
+                    kind
                     source {
                       address
                     }
+                    hash
                   }
                 }
               }
@@ -607,16 +581,16 @@ export async function getTokens() {
   tokensQueriesData.forEach((token) => {
     let contractMetadata = null;
     let originationOperation = null;
-    if (token.node.keys.edges.length > 0) {
-      contractMetadata = token.node.keys.edges[0].node.current_value.contract.contract_metadata ?? null;
-      originationOperation = token.node.keys.edges[0].node.current_value.contract.operations.edges[0] ?? null
+    if (token.node.contract) {
+      contractMetadata = token.node.contract.contract_metadata ?? null;
+      originationOperation = token.node.contract.operations.edges[0] ?? null
     }
     const tokenData = {
       cursor: token.node.id,
       annots: token.node.annots,
       block: token.node.block,
       contract: {
-        address: token.node.keys.edges[0] !== undefined ? token.node.keys.edges[0].node.current_value.contract.address : null,
+        address: token.node.contract.address,
         contract_metadata: contractMetadata,
       },
       origination_operation: {
@@ -629,7 +603,6 @@ export async function getTokens() {
       }
     }
     tokenDataArray.push(tokenData);
-    console.log(tokenData)
   })
 
 return tokenDataArray
