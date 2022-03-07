@@ -503,12 +503,6 @@ export async function getTokensAfter(afterCursor: string) {
     "query": `query BigmapQuery {
       bigmaps(filter: { annots: "%ledger" }, first: 15 after: "${afterCursor}") {
         total_count
-        page_info {
-          end_cursor
-          start_cursor
-          has_next_page
-          has_previous_page
-        }
         edges {
           cursor
           node {
@@ -606,10 +600,6 @@ export async function getTokensAfter(afterCursor: string) {
         batch_position: originationOperation ? originationOperation.node.batch_position : null,
         internal_position: originationOperation ? originationOperation.node.internal : null,
       },
-      page_info: {
-        start_cursor: null,
-        end_cursor: null,
-      }
     }
     tokenDataArray.push(tokenData);
   })
