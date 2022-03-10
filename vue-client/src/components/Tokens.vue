@@ -1,55 +1,76 @@
 <template>
   <div>
-    <v-card class="fill-height" outlined tile>
-      <v-form>
-        <v-container class="col-md-4 offset-md-4">
-          <v-row class="mt-5">
-            <v-text-field
-              v-model="userInputAddress"
-              label="ENTER TZ ADDRESS"
-              outlined
-            ></v-text-field>
-            <v-btn class="ml-2" height="55px" v-on:click="queryTokens()">
-              Tokens
-            </v-btn>
-          </v-row>
-        </v-container>
-      </v-form>
-      <div class="text-center mb-8" v-if="queryResponseTokens">
-        <v-btn
-          class="ml-3 mr-3"
-          height="55px"
-          v-on:click="queryRecentOperationsFromAddress(userInputAddress)"
-        >
+    <v-card height="100%" outlined tile>
+      <v-btn
+        class="mt-8 mb-3"
+        :style="{ left: '50%', transform: 'translateX(-50%)' }"
+        height="55px"
+        v-on:click="queryTokens()"
+      >
+        GET TOKENS
+      </v-btn>
+      <div class="text-center" v-if="queryResponseTokens">
+      </div>
+      <div v-if="loading" align="center">
+        <br />
+        <br />
+
+        <v-progress-circular
+          :size="600"
+          :width="7"
+          indeterminate
+        ></v-progress-circular>
+      </div>
+      <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
+        <v-btn class="ml-3 mr-3" height="55px">
           Prev
         </v-btn>
-        <v-btn
-          class="ml-3 mr-3"
-          height="55px"
-          v-on:click="queryTokensNext()"
-        >
+        <v-btn class="ml-3 mr-3" height="55px" v-on:click="queryTokensNext()">
           Next
         </v-btn>
       </div>
       <v-card
         v-for="operation in queryResponseTokens"
         v-bind:key="operation.id"
-        class="mx-auto"
+        class="mx-auto mt-1"
         outlined
         max-width="800px"
       >
         <v-list-item three-line>
           <v-list-item-content>
+            <v-system-bar height="50px" dark color="primary">
+              <span
+                >{{ operation.cursor }}:{{ operation.contract.address }}</span
+              >
+              <v-spacer></v-spacer>
+              <v-icon>mdi-wifi-strength-4</v-icon>
+              <v-icon>mdi-signal-cellular-outline</v-icon>
+              <v-icon>mdi-battery</v-icon>
+              <span>{{ operation.block.level }}</span>
+              <br />
+            </v-system-bar>
+            <v-system-bar
+              v-if="operation.contract.contract_metadata"
+              class="contract-metadata-banner"
+              height="50px"
+              dark
+              color="primary"
+            >
+              <span>{{ operation.contract.contract_metadata.name }}</span>
+              <v-spacer></v-spacer>
+              <v-icon>mdi-wifi-strength-4</v-icon>
+              <v-icon>mdi-signal-cellular-outline</v-icon>
+              <v-icon>mdi-battery</v-icon>
+              <br />
+            </v-system-bar>
             <div
-              class="text-overline"
+              class="text-overline ml-2"
               v-on:click="
                 operationDetailsDialog = false;
                 operationDetailsDialog = true;
                 tokenBigmapDetails = operation;
               "
             >
-              <!-- <h3>cursor</h3>
-              <p>{{ operation.cursor ? operation.cursor : '-' }}</p> -->
               <h3>address</h3>
               <p>
                 {{
@@ -98,11 +119,7 @@
         <v-btn class="ml-3 mr-3" height="55px">
           Prev
         </v-btn>
-        <v-btn
-          class="ml-3 mr-3"
-          height="55px"
-          v-on:click="queryTokensNext()"
-        >
+        <v-btn class="ml-3 mr-3" height="55px" v-on:click="queryTokensNext()">
           Next
         </v-btn>
       </div>
@@ -120,7 +137,9 @@
             v-bind:key="tokenBigmapDetailKey"
             class="text-overline"
           >
-            <p>--------------------------------------------------------------------</p>
+            <p>
+              --------------------------------------------------------------------
+            </p>
 
             <h3>{{ tokenBigmapDetailKey }}</h3>
             <div
@@ -166,7 +185,9 @@
               <p>{{ tokenBigmapDetailValue }}</p>
             </div>
           </div>
-          <p>--------------------------------------------------------------------</p>
+          <p>
+            --------------------------------------------------------------------
+          </p>
           <h3>Raw JSON:</h3>
           <p>{{ tokenBigmapDetails }}</p>
         </v-card-text>
@@ -184,12 +205,21 @@
   </div>
 </template>
 
+<style scoped>
+.contract-metadata-banner {
+  margin-top: -10px;
+}
+.v-system-bar {
+  font-size: 18px;
+}
+</style>
 <script>
 import axios from 'axios';
 
 export default {
   data() {
     return {
+      loading: false,
       operationDetailsDialog: false,
       queryResponseTokens: null,
       userInputAddress: '',
@@ -204,22 +234,38 @@ export default {
   },
   methods: {
     async queryTokens() {
+      this.queryResponseTokens = null;
+      this.loading = true;
       const res = await axios.get(`http://localhost:8080/tokens`);
       if (!res) {
         throw new Error('Error');
       }
-      this.queryResponseTokens = res.data;
+      console.log(JSON.stringify(res))
+      this.queryResponseTokens = res.data.data;
+      this.loading = false;
+
       return res.data;
     },
-      async queryTokensNext() {
-      if (this.queryResponseTokens[this.queryResponseTokens.length -1].cursor === undefined) {
+    async queryTokensNext() {
+      if (
+        this.queryResponseTokens[this.queryResponseTokens.length - 1].cursor ===
+        undefined
+      ) {
         throw new Error('Error');
       }
-      const res = await axios.get(`http://localhost:8080/tokens/after/${this.queryResponseTokens[this.queryResponseTokens.length -1].cursor}`);
+      const nextCursor = this.queryResponseTokens[
+        this.queryResponseTokens.length - 1
+      ].cursor;
+      this.queryResponseTokens = null;
+      this.loading = true;
+      const res = await axios.get(
+        `http://localhost:8080/tokens/after/${nextCursor}`
+      );
       if (!res) {
         throw new Error('Error');
       }
       this.queryResponseTokens = res.data;
+      this.loading = false;
       return res.data;
     }
   }
