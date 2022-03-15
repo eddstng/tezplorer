@@ -1,16 +1,68 @@
 <template>
   <div>
+    <div>
+      <p class="text-center mt-5">RECENT LEDGERS</p>
+    </div>
     <v-card height="100%" outlined tile>
+      <div>
+        <v-card style="position: fixed" class="mx-auto float-left">
+          <v-container class="px-0" fluid>
+            <p class="text-center">LEDGER FILTERS</p>
+            <v-btn
+              width="350px"
+              v-model="checkbox"
+              v-on:click="checkbox = !checkbox"
+            >
+              Contract Metadata: {{ checkbox }}
+            </v-btn>
+            <br />
+            <br />
+            <v-btn
+              width="350px"
+              v-model="checkbox"
+              v-on:click="checkbox = !checkbox"
+            >
+              Block Data: {{ checkbox }}
+            </v-btn>
+            <br />
+            <br />
+
+            <v-btn
+              width="350px"
+              v-model="checkbox"
+              v-on:click="checkbox = !checkbox"
+            >
+              Origination Data: {{ checkbox }}
+            </v-btn>
+            <br />
+            <br />
+            <br />
+            <v-btn
+            class="ml-15  "
+              width="200px"
+              v-model="checkbox"
+              v-on:click="checkbox = !checkbox"
+            >
+              Get Tokens
+            </v-btn>
+            <br />
+            <br />
+
+          </v-container>
+
+          <v-card-actions> </v-card-actions>
+        </v-card>
+      </div>
       <v-btn
         class="mt-8 mb-3"
         :style="{ left: '50%', transform: 'translateX(-50%)' }"
         height="55px"
         v-on:click="queryTokens()"
+        v-if="queryResponseTokens === null && loading !== true"
       >
-        GET TOKENS
+        GET RECENT LEDGERS
       </v-btn>
-      <div class="text-center" v-if="queryResponseTokens">
-      </div>
+      <div class="text-center" v-if="queryResponseTokens"></div>
       <div v-if="loading" align="center">
         <br />
         <br />
@@ -21,14 +73,14 @@
           indeterminate
         ></v-progress-circular>
       </div>
-      <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
+      <!-- <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
         <v-btn class="ml-3 mr-3" height="55px">
           Prev
         </v-btn>
         <v-btn class="ml-3 mr-3" height="55px" v-on:click="queryTokensNext()">
           Next
         </v-btn>
-      </div>
+      </div> -->
       <v-card
         v-for="operation in queryResponseTokens"
         v-bind:key="operation.id"
@@ -43,9 +95,6 @@
                 >{{ operation.cursor }}:{{ operation.contract.address }}</span
               >
               <v-spacer></v-spacer>
-              <v-icon>mdi-wifi-strength-4</v-icon>
-              <v-icon>mdi-signal-cellular-outline</v-icon>
-              <v-icon>mdi-battery</v-icon>
               <span>{{ operation.block.level }}</span>
               <br />
             </v-system-bar>
@@ -219,6 +268,7 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      checkbox: true,
       loading: false,
       operationDetailsDialog: false,
       queryResponseTokens: null,
@@ -240,7 +290,6 @@ export default {
       if (!res) {
         throw new Error('Error');
       }
-      console.log(JSON.stringify(res))
       this.queryResponseTokens = res.data.data;
       this.loading = false;
 
@@ -264,7 +313,7 @@ export default {
       if (!res) {
         throw new Error('Error');
       }
-      this.queryResponseTokens = res.data;
+      this.queryResponseTokens = res.data.data;
       this.loading = false;
       return res.data;
     }

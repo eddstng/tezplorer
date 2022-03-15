@@ -498,6 +498,7 @@ export async function getRecentOperationsFromAddress(address: string) {
 
 
 export async function getTokensAfter(afterCursor: string) {
+
   // Set up Tezgraph GraphQL Query
   const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
   const graphqlQuery = {
@@ -505,7 +506,7 @@ export async function getTokensAfter(afterCursor: string) {
     "query": `query BigmapQuery {
       bigmaps(
         filter: { annots: "%ledger" }
-        first: 15
+        first: 5
         after: "${afterCursor}"
         order_by: { field: id, direction: desc }
       ) {
@@ -576,7 +577,10 @@ export async function getTokensAfter(afterCursor: string) {
 
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {
-    return axiosResponseErrors
+    console.log(`Error: ${axiosResponseErrors}`)
+    if (axiosResponseData === null || axiosResponseData === undefined) {
+      throw new Error(`${axiosResponseErrors}`)
+    }
   }
 
   const tokensQueriesData = axiosResponseData.bigmaps.edges
@@ -610,7 +614,10 @@ export async function getTokensAfter(afterCursor: string) {
     tokenDataArray.push(tokenData);
   })
 
-  return tokenDataArray
+  return {
+    errors: axiosResponseErrors,
+    data: tokenDataArray,
+  }
 
 }
 
@@ -622,7 +629,7 @@ export async function getTokens() {
     "query": `query BigmapQuery {
       bigmaps(
         filter: { annots: "%ledger" }
-        first: 15
+        first: 5  
         order_by: { field: id, direction: desc }
       ) {
         total_count
@@ -708,8 +715,6 @@ export async function getTokens() {
   })
 
   const addressesString = addressesArray.map(address => `"${address}"`).join(',');
-  console.log(addressesString)
-  console.log((await getBigmapsRelatedToAddresses(addressesString)));
 
   tokensQueriesData.forEach((token) => {
     let contractMetadata = null;
