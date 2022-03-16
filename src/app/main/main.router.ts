@@ -1,6 +1,20 @@
 import { Router } from 'express';
-import { getOperationsFromAddressDesc, getOperationsFromAddressDescAfter, getTokens, getTokensAfter } from './main';
+import { getOperationsFromAddressDesc, getOperationsFromAddressDescAfter, getRecentLedgers, getTokensAfter, LedgerParams } from './main';
 export const router: Router = Router();
+
+// ========================================================================
+
+router.post("/recent/ledgers", async (req, res) => {
+  try {
+    const params: LedgerParams = req.body
+    res.status(200).send(await getRecentLedgers(params));
+  } catch (error) {
+    console.log(error)
+    res.status(500).send(error);
+  }
+});
+
+// ========================================================================
 
 router.get('/operations/:address/:relationshipType', async (req, res) => {
   try {
@@ -30,7 +44,7 @@ router.get('/operations/:address/:relationshipType/after/:cursor', async (req, r
 
 router.get('/tokens', async (req, res) => {
   try {
-    res.status(200).send(await getTokens());
+    res.status(200).send("unused");
   } catch (error) {
     console.log(error)
     res.status(500).send(error);

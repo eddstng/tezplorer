@@ -95,27 +95,176 @@ type TokenData = {
   block: {
     hash: string,
     timestamp: string,
-    level: string
+    level: number
   },
   contract: {
     address: string,
-    contract_metadata: {
+    contract_metadata?: {
       name: string,
       description: string,
       version: string,
-      authors: string,
+      authors: string[],
     }
   },
-  origination_operation: {
-    contract_address: string,
-    kind: string,
-    creator_address: string,
-    operation_hash: string,
-    batch_position: string,
-    internal_position: string,
+  origination_operation?: {
+    contract_address: string | null,
+    kind: string | null,
+    creator_address: string | null,
+    operation_hash: string | null,
+    batch_position: string | null,
+    internal_position: string | null,
   }
   // TO DO: Add an array of all bigmap ids.
 }
+
+export interface LedgerParams {
+  contract_metadata: boolean,
+  contract_origination: boolean,
+  pagination_after: string | undefined,
+}
+
+export async function getRecentLedgers(params: LedgerParams
+) {
+
+  // Set up Tezgraph GraphQL Query
+  const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
+
+  let contractMetadataQuery = params.contract_metadata ? `contract_metadata {
+    name
+    description
+    version
+    authors
+    homepage
+  }`: "";
+
+  let contractOriginationQuery = params.contract_origination ? `operations(
+    first: 1
+    filter: { kind: origination, relationship_type: contract }
+  ) {
+    edges {
+      node {
+        ... on OriginationRecord {
+          contract {
+            address
+          }
+        }
+        kind
+        source {
+          address
+        }
+        hash
+      }
+    }
+  }` : "";
+
+  let paginationAfterArgument = params.pagination_after ? `after: ${params.pagination_after}` : "";
+
+  let graphqlQuery = `query BigmapQuery {
+    bigmaps(
+      filter: { annots: "%ledger" }
+      first: 5  
+      order_by: { field: id, direction: desc }
+      ${paginationAfterArgument}
+    ) {
+      total_count
+      edges {
+        cursor
+        node {
+          id
+          annots
+          block {
+            hash
+            timestamp
+            level
+          }
+          contract {
+            address
+            ${contractMetadataQuery}
+            ${contractOriginationQuery}
+          }
+        } 
+      }
+    }
+  }`;
+
+  const graphqlQueryConfig = {
+    "operationName": "BigmapQuery",
+    "query": graphqlQuery,
+    "variables": {}
+  };
+  const headers = {
+    "content-type": "application/json",
+    "Authorization": "<token>"
+  };
+
+  const response = axios({
+    url: endpoint,
+    method: 'post',
+    headers: headers,
+    data: graphqlQueryConfig
+  });
+
+
+  // Run Tezgraph Query
+  const axiosResponse: resData = (await response).data
+  const axiosResponseData = axiosResponse.data
+  const axiosResponseErrors = axiosResponse.errors
+
+  // If Tezgraph returns an error, return error. 
+  if (axiosResponseErrors !== undefined) {
+    console.log(`Error: ${axiosResponseErrors}`)
+    if (axiosResponseData === null || axiosResponseData === undefined) {
+      throw new Error(`${axiosResponseErrors}`)
+    }
+  }
+
+  const tokensQueriesData = axiosResponseData.bigmaps.edges
+  const tokenDataArray: any[] = [];
+
+  // WIP: Retrieving all related bigmaps ids. 
+  // let addressesArray = tokensQueriesData.map((element) => {
+  //   return element.node.contract.address
+  // })
+  // const addressesString = addressesArray.map(address => `"${address}"`).join(',');
+
+  tokensQueriesData.forEach((token) => {
+    let originationOperation = null;
+    if (token.node.contract) {
+      originationOperation = token.node.contract.operations && token.node.contract.operations.edges[0] ? token.node.contract.operations.edges[0] : null
+    }
+    const tokenData: TokenData = {
+      cursor: token.node.id,
+      annots: token.node.annots,
+      block: token.node.block,
+      contract: {
+        address: token.node.contract.address,
+      },
+    }
+
+    if (token.node.contract.contract_metadata) {
+      tokenData.contract.contract_metadata = token.node.contract.contract_metadata
+    }
+
+    if (token.node.contract.operations && token.node.contract.operations.edges[0]) {
+      tokenData.origination_operation = {
+        contract_address: originationOperation ? originationOperation.node.contract.address : null,
+        kind: originationOperation ? originationOperation.node.kind : null,
+        creator_address: originationOperation ? originationOperation.node.source.address : null,
+        operation_hash: originationOperation ? originationOperation.node.hash : null,
+        batch_position: originationOperation ? originationOperation.node.batch_position : null,
+        internal_position: originationOperation ? originationOperation.node.internal : null,
+      }
+    }
+    tokenDataArray.push(tokenData);
+  })
+
+  return {
+    errors: axiosResponseErrors,
+    data: tokenDataArray,
+  }
+}
+
+// ========================================================================
 
 export async function getOperationsFromAddressDesc(address: string, relationshipType: "destination" | "source") {
   // Set up Tezgraph GraphQL Query
@@ -619,135 +768,6 @@ export async function getTokensAfter(afterCursor: string) {
     data: tokenDataArray,
   }
 
-}
-
-export async function getTokens() {
-  // Set up Tezgraph GraphQL Query
-  const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
-  const graphqlQuery = {
-    "operationName": "BigmapQuery",
-    "query": `query BigmapQuery {
-      bigmaps(
-        filter: { annots: "%ledger" }
-        first: 5  
-        order_by: { field: id, direction: desc }
-      ) {
-        total_count
-        edges {
-          cursor
-          node {
-            id
-            annots
-            annots
-            block {
-              hash
-              timestamp
-              level
-            }
-            contract {
-              address
-              contract_metadata {
-                name
-                description
-                version
-                authors
-                homepage
-              }
-              operations(
-                first: 1
-                filter: { kind: origination, relationship_type: contract }
-              ) {
-                edges {
-                  node {
-                    ... on OriginationRecord {
-                      contract {
-                        address
-                      }
-                    }
-                    kind
-                    source {
-                      address
-                    }
-                    hash
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }    
-    `,
-    "variables": {}
-  };
-  const headers = {
-    "content-type": "application/json",
-    "Authorization": "<token>"
-  };
-  const response = axios({
-    url: endpoint,
-    method: 'post',
-    headers: headers,
-    data: graphqlQuery
-  });
-
-
-  // Run Tezgraph Query
-  const axiosResponse: resData = (await response).data
-
-  const axiosResponseData = axiosResponse.data
-  const axiosResponseErrors = axiosResponse.errors
-
-  // If Tezgraph returns an error, return error. 
-  if (axiosResponseErrors !== undefined) {
-    console.log(`Error: ${axiosResponseErrors}`)
-    if (axiosResponseData === null || axiosResponseData === undefined) {
-      throw new Error(`${axiosResponseErrors}`)
-    }
-  }
-
-  const tokensQueriesData = axiosResponseData.bigmaps.edges
-
-  const tokenDataArray: any[] = [];
-
-  let addressesArray = tokensQueriesData.map((element) => {
-    return element.node.contract.address
-  })
-
-  const addressesString = addressesArray.map(address => `"${address}"`).join(',');
-
-  tokensQueriesData.forEach((token) => {
-    let contractMetadata = null;
-    let originationOperation = null;
-    if (token.node.contract) {
-      contractMetadata = token.node.contract.contract_metadata ?? null;
-      originationOperation = token.node.contract.operations.edges[0] ?? null
-    }
-    const tokenData = {
-      cursor: token.node.id,
-      annots: token.node.annots,
-      block: token.node.block,
-      contract: {
-        address: token.node.contract.address,
-        contract_metadata: contractMetadata,
-      },
-      // related_bigmaps: [],
-      origination_operation: {
-        contract_address: originationOperation ? originationOperation.node.contract.address : null,
-        kind: originationOperation ? originationOperation.node.kind : null,
-        creator_address: originationOperation ? originationOperation.node.source.address : null,
-        operation_hash: originationOperation ? originationOperation.node.hash : null,
-        batch_position: originationOperation ? originationOperation.node.batch_position : null,
-        internal_position: originationOperation ? originationOperation.node.internal : null,
-      }
-    }
-    tokenDataArray.push(tokenData);
-  })
-
-  return {
-    errors: axiosResponseErrors,
-    data: tokenDataArray,
-  }
 }
 
 export async function getBigmapsRelatedToAddresses(addressesString: string) {

@@ -57,7 +57,7 @@
         class="mt-8 mb-3"
         :style="{ left: '50%', transform: 'translateX(-50%)' }"
         height="55px"
-        v-on:click="queryTokens()"
+        v-on:click="getRecentLedgers()"
         v-if="queryResponseTokens === null && loading !== true"
       >
         GET RECENT LEDGERS
@@ -283,10 +283,10 @@ export default {
     };
   },
   methods: {
-    async queryTokens() {
+    async getRecentLedgers() {
       this.queryResponseTokens = null;
       this.loading = true;
-      const res = await axios.get(`http://localhost:8080/tokens`);
+      const res = await axios.post(`http://localhost:8080/recent/ledgers`, {"contract_metadata": true, "contract_origination": false});
       if (!res) {
         throw new Error('Error');
       }
