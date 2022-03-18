@@ -3,66 +3,67 @@
     <div>
       <p class="text-center mt-5">RECENT LEDGERS</p>
     </div>
-    <v-card height="100%" outlined tile>
+    <v-card height="100%" tile>
       <div>
-        <v-card style="position: fixed" class="mx-auto float-left">
+        <v-card style="position: fixed" class="mx-auto mt-9 float-left">
           <v-container class="px-0" fluid>
-            <p class="text-center">LEDGER FILTERS</p>
-            <v-btn
-              width="350px"
-              v-model="checkbox"
-              v-on:click="checkbox = !checkbox"
-            >
-              Contract Metadata: {{ checkbox }}
-            </v-btn>
-            <br />
+            <v-system-bar height="50px" dark color="primary">
+              <span class="mx-auto">LEDGER FILTERS</span>
+              <br />
+            </v-system-bar>
             <br />
             <v-btn
               width="350px"
-              v-model="checkbox"
-              v-on:click="checkbox = !checkbox"
+              v-model="contractMetadataQueryBoolean"
+              v-on:click="
+                contractMetadataQueryBoolean = !contractMetadataQueryBoolean
+              "
             >
-              Block Data: {{ checkbox }}
+              Contract Metadata: {{ contractMetadataQueryBoolean }}
             </v-btn>
+            <!-- <v-btn
+              width="350px"
+              v-model="blockQueryBoolean"
+              v-on:click="blockQueryBoolean = !blockQueryBoolean"
+            >
+              Block Data: {{ blockQueryBoolean }}
+            </v-btn> -->
             <br />
             <br />
 
             <v-btn
               width="350px"
-              v-model="checkbox"
-              v-on:click="checkbox = !checkbox"
+              v-model="originationQueryBoolean"
+              v-on:click="originationQueryBoolean = !originationQueryBoolean"
             >
-              Origination Data: {{ checkbox }}
+              Origination Data: {{ originationQueryBoolean }}
             </v-btn>
             <br />
             <br />
             <br />
             <v-btn
-            class="ml-15  "
+              class="ml-15  "
               width="200px"
               v-model="checkbox"
-              v-on:click="checkbox = !checkbox"
+              v-on:click="getRecentLedgers()"
             >
               Get Tokens
             </v-btn>
             <br />
             <br />
-
           </v-container>
 
           <v-card-actions> </v-card-actions>
         </v-card>
       </div>
-      <v-btn
+      <!-- <v-btn
         class="mt-8 mb-3"
         :style="{ left: '50%', transform: 'translateX(-50%)' }"
-        height="55px"
         v-on:click="getRecentLedgers()"
         v-if="queryResponseTokens === null && loading !== true"
       >
         GET RECENT LEDGERS
-      </v-btn>
-      <div class="text-center" v-if="queryResponseTokens"></div>
+      </v-btn> -->
       <div v-if="loading" align="center">
         <br />
         <br />
@@ -107,9 +108,6 @@
             >
               <span>{{ operation.contract.contract_metadata.name }}</span>
               <v-spacer></v-spacer>
-              <v-icon>mdi-wifi-strength-4</v-icon>
-              <v-icon>mdi-signal-cellular-outline</v-icon>
-              <v-icon>mdi-battery</v-icon>
               <br />
             </v-system-bar>
             <div
@@ -268,6 +266,8 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      contractMetadataQueryBoolean: false,
+      originationQueryBoolean: false,
       checkbox: true,
       loading: false,
       operationDetailsDialog: false,
@@ -286,7 +286,10 @@ export default {
     async getRecentLedgers() {
       this.queryResponseTokens = null;
       this.loading = true;
-      const res = await axios.post(`http://localhost:8080/recent/ledgers`, {"contract_metadata": true, "contract_origination": false});
+      const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
+        contract_metadata: this.contractMetadataQueryBoolean,
+        contract_origination: this.originationQueryBoolean
+      });
       if (!res) {
         throw new Error('Error');
       }
