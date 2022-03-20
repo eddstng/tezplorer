@@ -21,13 +21,6 @@
             >
               Contract Metadata: {{ contractMetadataQueryBoolean }}
             </v-btn>
-            <!-- <v-btn
-              width="350px"
-              v-model="blockQueryBoolean"
-              v-on:click="blockQueryBoolean = !blockQueryBoolean"
-            >
-              Block Data: {{ blockQueryBoolean }}
-            </v-btn> -->
             <br />
             <br />
 
@@ -56,14 +49,6 @@
           <v-card-actions> </v-card-actions>
         </v-card>
       </div>
-      <!-- <v-btn
-        class="mt-8 mb-3"
-        :style="{ left: '50%', transform: 'translateX(-50%)' }"
-        v-on:click="getRecentLedgers()"
-        v-if="queryResponseTokens === null && loading !== true"
-      >
-        GET RECENT LEDGERS
-      </v-btn> -->
       <div v-if="loading" align="center">
         <br />
         <br />
@@ -74,14 +59,6 @@
           indeterminate
         ></v-progress-circular>
       </div>
-      <!-- <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
-        <v-btn class="ml-3 mr-3" height="55px">
-          Prev
-        </v-btn>
-        <v-btn class="ml-3 mr-3" height="55px" v-on:click="queryTokensNext()">
-          Next
-        </v-btn>
-      </div> -->
       <v-card
         v-for="operation in queryResponseTokens"
         v-bind:key="operation.id"
@@ -310,9 +287,11 @@ export default {
       ].cursor;
       this.queryResponseTokens = null;
       this.loading = true;
-      const res = await axios.get(
-        `http://localhost:8080/tokens/after/${nextCursor}`
-      );
+    const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
+        contract_metadata: this.contractMetadataQueryBoolean,
+        contract_origination: this.originationQueryBoolean,
+        after: nextCursor
+      });
       if (!res) {
         throw new Error('Error');
       }

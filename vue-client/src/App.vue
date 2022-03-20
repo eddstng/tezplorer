@@ -1,7 +1,6 @@
 <template>
   <v-app>
     <template>
-      <!-- <Operations /> -->
       <template>
         <div>
           <v-system-bar dark color="primary">
@@ -32,7 +31,7 @@
             <v-tab-item v-for="item in items" :key="item">
               <v-card color="basil" flat>
                 <div v-if="item === 'all_ledgers'">
-                  <Tokens />
+                  <Ledgers />
                 </div>
                 <v-card-text>{{ content[item] }}</v-card-text>
               </v-card>
@@ -45,11 +44,10 @@
 </template>
 
 <script>
-// import Operations from './components/Operations';
-import Tokens from './components/Tokens';
+import Ledgers from './components/Ledgers';
 export default {
   components: {
-    Tokens
+    Ledgers
   },
   data() {
     return {
@@ -61,9 +59,7 @@ export default {
         Entrees: 'edddddd',
         Deserts: '23423424234234234234',
         Cocktails: '5k'
-      },
-      text:
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.'
+      }
     };
   }
 };
