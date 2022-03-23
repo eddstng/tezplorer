@@ -22,6 +22,11 @@ export type resData = {
                 node: bigmapNode,
             }[],
         },
+        operations: {
+            edges: {
+                node: operationNode
+            }[]
+        }
     },
     errors?: {
         message: string

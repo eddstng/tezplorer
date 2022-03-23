@@ -8,7 +8,6 @@ export interface LedgerParams {
   pagination_after: string | undefined,
 }
 
-
 export async function getOperationsFromAddressDesc(address: string, relationshipType: "destination" | "source") {
   // Set up Tezgraph GraphQL Query
   const endpoint = "https://mainnet.tezgraph.tez.ie/graphql";
