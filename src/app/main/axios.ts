@@ -1,5 +1,5 @@
 import axios, { Method } from "axios";
-import { bigmapNode } from "./ledgers";
+import { bigmapNode } from "./bigmaps";
 import { operationNode } from "./operations";
 const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
 

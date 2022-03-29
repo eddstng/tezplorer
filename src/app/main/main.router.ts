@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getRecentLedgers } from './ledgers';
+import { getRecentLedgers } from './bigmaps';
 import { getOperationsFromAddressDesc, getOperationsFromAddressDescAfter, getTokensAfter, LedgerParams } from './main';
 import { getRecentBigTransactions } from './operations';
 export const router: Router = Router();
