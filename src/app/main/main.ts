@@ -559,6 +559,4 @@ export async function getBigmapsRelatedToAddresses(addressesString: string) {
   if (axiosResponseErrors !== undefined) {
     return axiosResponseErrors
   }
-
-  console.log(JSON.stringify(axiosResponseData))
 }

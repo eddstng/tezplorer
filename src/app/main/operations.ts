@@ -1,66 +1,63 @@
+import axios from "axios";
 import { resData, runAxiosCall } from "./axios";
 
 export type operationNode = {
-  __typename: string
-  hash: string,
-  batch_position: string,
-  internal: string,
+  batch_position: number,
   kind: string,
-  block: {
-    hash: string,
-    level: string,
-    timestamp: string
-  },
-  source: {
-    address: string
-  },
-  fee: string,
-  counter: string,
-  gas_limit: string,
-  storage_limit: string,
-  storage_size: string,
-  amount: string,
-  parameters: string
-  entrypoint: string,
-  value: string,
-  prim: string,
-};
-
-export type bigmapNode = {
-  id: string,
-  annots: string,
+  hash: string,
   block: {
     hash: string,
     timestamp: string,
-    level: number,
+    level: number
   },
-  contract: {
-    address: string,
-    contract_metadata: {
-      name: string,
-      description: string,
-      version: string,
-      authors: string[],
-      homepage: string,
-    },
-    operations: {
-      edges: {
-        node: {
-          contract: {
-            address: string,
-          },
-          kind: string,
-          source: {
-            address: string,
-          },
-          hash: string
-          batch_position: string,
-          internal: string,
-        }
-      }[]
+  internal: number,
+  storage_size: string,
+  metadata: {
+    operation_result: {
+      consumed_gas: string,
+      consumed_milligas: string
     }
-  }
-};
+  },
+  parameters: {
+    entrypoint: string
+  },
+  amount: string,
+  destination: {
+    address: string,
+    contract_metadata: any
+  },
+  source: {
+    address: string,
+    contract_metadata: any
+  },
+  cursor: string,
+  // bigmap_values: {
+  //   edges: [
+  //     {
+  //       node: {
+  //         kind: update,
+  //         key: {
+  //           int: 1146
+  //         },
+  //         contract: {
+  //           address: KT1DcrUC4rhnDkmvKDTykD3se7ZSwvqE1Rpr
+  //         }
+  //       }
+  //     },
+  //     {
+  //       node: {
+  //         kind: update,
+  //         key: {
+  //           bytes: 000031641295fb44cd0887a01789ca070b9e7357369c
+  //         },
+  //         contract: {
+  //           address: KT1DcrUC4rhnDkmvKDTykD3se7ZSwvqE1Rpr
+  //         }
+  //       }
+  //     }
+  //   ]
+  // },
+}
 
 type bigfishData = {
   cursor: string,
@@ -69,56 +66,28 @@ type bigfishData = {
     timestamp: string,
     level: number
   },
-  contract: { // if kt address is involved
-    address: string,
-    contract_metadata?: {
-      name: string,
-      description: string,
-      version: string,
-      authors: string[],
-    }
-  },
   transaction_operation?: {
     source_address: string | null,
+    source_contract_metadata: any, // make contract metadata type
     kind: string | null,
     destination_address: string | null,
+    destination_contract_metadata: any,
     operation_hash: string | null,
-    batch_position: string | null,
-    internal_position: string | null,
+    batch_position: number | null,
+    internal_position: number | null,
     amount: string,
     consumed_gas: string,
     consumed_milligas: string,
     storage_size: string,
     entrypoint: string,
-     //what casing do we want to use?
+    //what casing do we want to use?
   }
-}
-
-
-type transactionRecord = {
-  cursor: string,
-  kind: string,
-  hash: string,
-  block: { hash: string, timestamp: string, level: string },
-  storage_size: string,
-  metadata: {
-    operation_result: {
-      consumed_gas: string
-      consumed_milligas: string
-    }
-  },
-  parameters: { entrypoint: string },
-  amount: string,
-  destination: string,
-  source: {
-    address: string,
-    contract_metadata: any,
-  }
+  usdPrice: number | null,
 }
 
 export async function getRecentBigTransactions() {
   // Set up Tezgraph GraphQL Query
-  let graphqlQuery = `query OperationsQuery {
+  let graphqlQuery = ` query OperationsQuery {
     operations(
       first: 50
       filter: { kind: transaction, amount: { gte: "1000000000" } }
@@ -126,6 +95,7 @@ export async function getRecentBigTransactions() {
       edges {
         cursor
         node {
+          batch_position
           kind
           hash
           block {
@@ -145,8 +115,28 @@ export async function getRecentBigTransactions() {
             parameters {
               entrypoint
             }
+            bigmap_values(first: 100) {
+              edges {
+                node {
+                  kind
+                  key
+                  contract {
+                    address
+                  }
+                }
+              }
+            }
             amount
-            destination
+            destination {
+              address
+              contract_metadata {
+                description
+                name
+                authors
+                version
+                raw
+              }
+            }
             source {
               address
               contract_metadata {
@@ -176,7 +166,7 @@ export async function getRecentBigTransactions() {
 
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {
-    console.log(`Error: ${axiosResponseErrors}`)
+    // console.log(`Error: ${axiosResponseErrors}`)
     if (axiosResponseData === null || axiosResponseData === undefined) {
       throw new Error(`${axiosResponseErrors}`)
     }
@@ -185,47 +175,46 @@ export async function getRecentBigTransactions() {
   const recentLedgersData = axiosResponseData.operations.edges
   const ledgersDataArray: any[] = [];
 
+  // const xtzUsdPrice: { data: { tezos: { usd: string } } } = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd')
+
 
   recentLedgersData.forEach((operation: any) => {
-    const operatationRecord: transactionRecord = operation.node
+    const operatationRecord: operationNode = operation.node
+    console.log(operatationRecord.source)
     operatationRecord.cursor = operation.cursor
 
-    console.log('===============');
-    console.log(operatationRecord);
-    console.log('===============');
-
+    // console.log('===============');
+    // console.log(xtzUsdPrice.data.tezos.usd);
+    // console.log('===============');
+    // console.log((parseInt(operatationRecord.amount) / 1000000))
+    // console.log(parseInt(xtzUsdPrice.data.tezos.usd) * (parseInt(operatationRecord.amount) / 1000000))
+    // operatationRecord.usdPrice = parseInt(xtzUsdPrice.data.tezos.usd) * (parseInt(operatationRecord.amount) / 1000000)
     const bigfishData: bigfishData = {
-      cursor: '',
+      cursor: operatationRecord.cursor,
       block: {
-        hash: '',
-        timestamp: '',
-        level: 0
-      },
-      contract: { // if kt address is involved
-        address: '',
-        contract_metadata: {
-          name: '',
-          description: '',
-          version: '',
-          authors: [''],
-        }
+        hash: operatationRecord.block.hash,
+        timestamp: operatationRecord.block.timestamp,
+        level: operatationRecord.block.level
       },
       transaction_operation: {
-        source_address: '' ,
-        kind: '' ,
-        destination_address: '' ,
-        operation_hash: '' ,
-        batch_position: '' ,
-        internal_position: '' ,
-        amount: '',
-        consumed_gas: '',
-        consumed_milligas: '',
-        storage_size: '',
-        entrypoint: '',
-         //what casing do we want to use?
-      }
+        source_address: operatationRecord.source.address,
+        source_contract_metadata: operatationRecord.source.contract_metadata,
+        kind: operatationRecord.kind,
+        destination_address: operatationRecord.destination.address,
+        destination_contract_metadata: operatationRecord.destination.contract_metadata,
+        operation_hash: operatationRecord.hash,
+        batch_position: operatationRecord.batch_position,
+        internal_position: operatationRecord.internal,
+        amount: operatationRecord.amount,
+        consumed_gas: operatationRecord.metadata.operation_result.consumed_gas,
+        consumed_milligas: operatationRecord.metadata.operation_result.consumed_milligas,
+        storage_size: operatationRecord.storage_size,
+        entrypoint: operatationRecord.parameters.entrypoint,
+        //what casing do we want to use?
+      },
+      usdPrice: null,
     }
-    ledgersDataArray.push(operatationRecord);
+    ledgersDataArray.push(bigfishData);
 
   })
   return ledgersDataArray

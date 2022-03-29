@@ -12,9 +12,7 @@
         </div>
         <v-card color="basil">
           <v-card-title class="text-center justify-center py-6">
-            <h1 class="font-weight-bold text-h2 basil--text">
-              TEZPLORER
-            </h1>
+            <h1 class="font-weight-bold text-h2 basil--text">TEZPLORER</h1>
           </v-card-title>
           <v-tabs
             v-model="tab"
@@ -33,6 +31,9 @@
                 <div v-if="item === 'all_ledgers'">
                   <Ledgers />
                 </div>
+                <div v-if="item === '🐟'">
+                  <Bigfish />
+                </div>
                 <v-card-text>{{ content[item] }}</v-card-text>
               </v-card>
             </v-tab-item>
@@ -45,22 +46,23 @@
 
 <script>
 import Ledgers from './components/Ledgers';
+import Bigfish from './components/Bigfish';
 export default {
   components: {
-    Ledgers
+    Ledgers,
+    Bigfish,
   },
   data() {
     return {
       render: true,
       tab: null,
-      items: ['Appetizers', 'Entrees', 'all_ledgers', 'Cocktails'],
+      items: ['Appetizers', 'Entrees', 'all_ledgers', '🐟'],
       content: {
         Appetizers: '123123123123',
         Entrees: 'edddddd',
         Deserts: '23423424234234234234',
-        Cocktails: '5k'
-      }
+      },
     };
-  }
+  },
 };
 </script>

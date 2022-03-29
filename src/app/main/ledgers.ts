@@ -6,6 +6,42 @@ export interface LedgerParams {
   pagination_after: string | undefined,
 }
 
+export type bigmapNode = {
+  id: string,
+  annots: string,
+  block: {
+    hash: string,
+    timestamp: string,
+    level: number,
+  },
+  contract: {
+    address: string,
+    contract_metadata: {
+      name: string,
+      description: string,
+      version: string,
+      authors: string[],
+      homepage: string,
+    },
+    operations: {
+      edges: {
+        node: {
+          contract: {
+            address: string,
+          },
+          kind: string,
+          source: {
+            address: string,
+          },
+          hash: string
+          batch_position: string,
+          internal: string,
+        }
+      }[]
+    }
+  }
+};
+
 type LedgerData = {
   cursor: string,
   annots: string,
@@ -107,7 +143,7 @@ export async function getRecentLedgers(params: LedgerParams
 
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {
-    console.log(`Error: ${axiosResponseErrors}`)
+    // console.log(`Error: ${axiosResponseErrors}`)
     if (axiosResponseData === null || axiosResponseData === undefined) {
       throw new Error(`${axiosResponseErrors}`)
     }
