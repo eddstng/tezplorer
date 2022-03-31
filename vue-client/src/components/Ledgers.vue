@@ -40,7 +40,7 @@
               v-model="checkbox"
               v-on:click="getRecentLedgers()"
             >
-              Get Tokens
+              Get Ledgers
             </v-btn>
             <br />
             <br />
@@ -88,7 +88,7 @@
               <br />
             </v-system-bar>
             <div
-              class="text-overline ml-2"
+              class="text-overline ml-2 mt-5"
               v-on:click="
                 operationDetailsDialog = false;
                 operationDetailsDialog = true;

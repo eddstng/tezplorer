@@ -1,4 +1,3 @@
-import axios from "axios";
 import { resData, runAxiosCall } from "./axios";
 
 export type operationNode = {
@@ -89,7 +88,7 @@ export async function getRecentBigTransactions() {
   // Set up Tezgraph GraphQL Query
   let graphqlQuery = ` query OperationsQuery {
     operations(
-      first: 50
+      first: 25
       filter: { kind: transaction, amount: { gte: "1000000000" } }
     ) {
       edges {
@@ -180,7 +179,6 @@ export async function getRecentBigTransactions() {
 
   recentLedgersData.forEach((operation: any) => {
     const operatationRecord: operationNode = operation.node
-    console.log(operatationRecord.source)
     operatationRecord.cursor = operation.cursor
 
     // console.log('===============');

@@ -35,12 +35,12 @@
             <br />
             <br />
             <v-btn
-              class="ml-15  "
+              class="ml-15"
               width="200px"
               v-model="checkbox"
               v-on:click="getRecentBigfish()"
             >
-              Get Tokens
+              Get Fish
             </v-btn>
             <br />
             <br />
@@ -69,14 +69,18 @@
         <v-list-item three-line>
           <v-list-item-content>
             <v-system-bar height="50px" dark color="primary">
-              <v-spacer> {{operation.hash}}:{{operation.batch_position}}</v-spacer>
+              <v-spacer>
+                {{ operation.transaction_operation.operation_hash }}:{{
+                  operation.transaction_operation.batch_position
+                }}</v-spacer
+              >
 
               <v-spacer></v-spacer>
-              <span>{{ operation.block.level }}</span>
+              <span>${{ operation.usdPrice.toFixed(2) }}</span>
               <br />
             </v-system-bar>
             <div
-              class="text-overline ml-2"
+              class="text-overline ml-2 mt-5"
               v-on:click="
                 operationDetailsDialog = false;
                 operationDetailsDialog = true;
@@ -84,16 +88,108 @@
               "
             >
               <h3>operation hash</h3>
-              <p>{{ operation.hash }}</p>
+              <p>{{ operation.transaction_operation.operation_hash }}</p>
 
               <h3>batch position</h3>
-              <p>{{ operation.batch_position }}</p>
+              <p>{{ operation.transaction_operation.batch_position }}</p>
 
               <h3>internal position</h3>
-              <p>{{ operation.internal }}</p>
+              <p>{{ operation.transaction_operation.internal_position }}</p>
 
-                            <h3>amount</h3>
-              <p>{{ operation.amount }}</p>
+              <h3>source address</h3>
+              <p>{{ operation.transaction_operation.source_address }}</p>
+
+              <div
+                v-if="operation.transaction_operation.source_contract_metadata"
+              >
+                <h3>source_contract_metadata</h3>
+                <p>
+                  Name:
+                  {{
+                    operation.transaction_operation.source_contract_metadata
+                      .name
+                  }}
+                </p>
+                <p>
+                  Description:
+                  {{
+                    operation.transaction_operation.source_contract_metadata
+                      .description
+                  }}
+                </p>
+                <p>
+                  Version:
+                  {{
+                    operation.transaction_operation.source_contract_metadata
+                      .version
+                  }}
+                </p>
+                <p>
+                  Authors:
+                  {{
+                    operation.transaction_operation.source_contract_metadata
+                      .authors
+                  }}
+                </p>
+                <p>
+                  Homepage:
+                  {{
+                    operation.transaction_operation.source_contract_metadata
+                      .homepage
+                  }}
+                </p>
+              </div>
+              <h3>destination address</h3>
+              <p>{{ operation.transaction_operation.destination_address }}</p>
+
+              <div
+                v-if="
+                  operation.transaction_operation.destination_contract_metadata
+                "
+              >
+                <h3>destination_contract_metadata</h3>
+                <p>
+                  Name:
+                  {{
+                    operation.transaction_operation
+                      .destination_contract_metadata.name
+                  }}
+                </p>
+                <p>
+                  Description:
+                  {{
+                    operation.transaction_operation
+                      .destination_contract_metadata.description
+                  }}
+                </p>
+                <p>
+                  Version:
+                  {{
+                    operation.transaction_operation
+                      .destination_contract_metadata.version
+                  }}
+                </p>
+                <p>
+                  Authors:
+                  {{
+                    operation.transaction_operation
+                      .destination_contract_metadata.authors
+                  }}
+                </p>
+                <p>
+                  Homepage:
+                  {{
+                    operation.transaction_operation
+                      .destination_contract_metadata.homepage
+                  }}
+                </p>
+              </div>
+
+              <h3>amount</h3>
+              <p>{{ operation.transaction_operation.amount }}</p>
+
+              <h3>usd price</h3>
+              <p>${{ operation.usdPrice.toFixed(2) }}</p>
 
               <h3>block hash</h3>
               <p>{{ operation.block.hash ? operation.block.hash : '-' }}</p>
@@ -112,9 +208,7 @@
         </v-list-item>
       </v-card>
       <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
-        <v-btn class="ml-3 mr-3" height="55px">
-          Prev
-        </v-btn>
+        <v-btn class="ml-3 mr-3" height="55px"> Prev </v-btn>
         <v-btn class="ml-3 mr-3" height="55px" v-on:click="queryTokensNext()">
           Next
         </v-btn>
@@ -128,8 +222,9 @@
 
         <v-card-text class="black--text">
           <div
-            v-for="(tokenBigmapDetailValue,
-            tokenBigmapDetailKey) in tokenBigmapDetails"
+            v-for="(
+              tokenBigmapDetailValue, tokenBigmapDetailKey
+            ) in tokenBigmapDetails"
             v-bind:key="tokenBigmapDetailKey"
             class="text-overline"
           >
@@ -141,25 +236,27 @@
             <div
               v-if="
                 typeof tokenBigmapDetailValue === 'object' &&
-                  tokenBigmapDetailValue !== null
+                tokenBigmapDetailValue !== null
               "
             >
               <div
-                v-for="(nestedTokenObjectValue,
-                nestedTokenObjectKey) in tokenBigmapDetailValue"
+                v-for="(
+                  nestedTokenObjectValue, nestedTokenObjectKey
+                ) in tokenBigmapDetailValue"
                 v-bind:key="nestedTokenObjectValue"
                 class="text-overline"
               >
                 <div
                   v-if="
                     typeof nestedTokenObjectValue === 'object' &&
-                      nestedTokenObjectValue !== null
+                    nestedTokenObjectValue !== null
                   "
                 >
                   <h3>{{ nestedTokenObjectKey }}</h3>
                   <div
-                    v-for="(nestedNestedTokenObjectValue,
-                    nestedNestedTokenobjectKey) in nestedTokenObjectValue"
+                    v-for="(
+                      nestedNestedTokenObjectValue, nestedNestedTokenobjectKey
+                    ) in nestedTokenObjectValue"
                     v-bind:key="nestedNestedTokenObjectValue"
                     class="text-overline"
                   >
@@ -227,24 +324,33 @@ export default {
       operationsPaginationDetails: {
         address: '',
         sourceAfterCursor: '',
-        destinationAfterCursor: ''
-      }
+        destinationAfterCursor: '',
+      },
     };
   },
   methods: {
     async getRecentBigfish() {
       this.queryResponseTokens = null;
       this.loading = true;
-    //   const xtzUsdPrice = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd')
-    //   console.log(xtzUsdPrice.data.tezos.usd)
-    //   console.log(xtzUsdPrice.data.tezos.usd)
-    //   console.log(xtzUsdPrice.data.tezos.usd)
+      const xtzUsdPrice = await axios.get(
+        'https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd'
+      );
+      console.log(xtzUsdPrice.data.tezos.usd);
+      console.log(xtzUsdPrice.data.tezos.usd);
+      console.log(xtzUsdPrice.data.tezos.usd);
 
       const res = await axios.get(`http://localhost:8080/recent/bigfish`);
       if (!res) {
         throw new Error('Error');
       }
-      console.log(res.data)
+      const bigfishArray = [];
+      res.data.forEach((element) => {
+        let bigfishObj = element;
+        bigfishObj.usdPrice =
+          (element.transaction_operation.amount / 1000000) *
+          xtzUsdPrice.data.tezos.usd;
+        bigfishArray.push(bigfishObj);
+      });
       this.queryResponseTokens = res.data;
       this.loading = false;
 
@@ -257,15 +363,14 @@ export default {
       ) {
         throw new Error('Error');
       }
-      const nextCursor = this.queryResponseTokens[
-        this.queryResponseTokens.length - 1
-      ].cursor;
+      const nextCursor =
+        this.queryResponseTokens[this.queryResponseTokens.length - 1].cursor;
       this.queryResponseTokens = null;
       this.loading = true;
-    const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
+      const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
         contract_metadata: this.contractMetadataQueryBoolean,
         contract_origination: this.originationQueryBoolean,
-        after: nextCursor
+        after: nextCursor,
       });
       if (!res) {
         throw new Error('Error');
@@ -273,7 +378,7 @@ export default {
       this.queryResponseTokens = res.data.data;
       this.loading = false;
       return res.data;
-    }
-  }
+    },
+  },
 };
 </script>
