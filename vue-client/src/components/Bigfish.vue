@@ -44,6 +44,14 @@
             </v-btn>
             <br />
             <br />
+            <v-btn
+              class="ml-15"
+              width="200px"
+              v-model="checkbox"
+              v-on:click="subscribeToGraphQL()"
+            >
+              Get Sub
+            </v-btn>
           </v-container>
 
           <v-card-actions> </v-card-actions>
@@ -308,6 +316,7 @@
 </style>
 <script>
 import axios from 'axios';
+import { SubscriptionClient } from 'graphql-subscriptions-client';
 
 export default {
   data() {
@@ -356,6 +365,97 @@ export default {
 
       return res.data;
     },
+    async subscribeToGraphQL() {
+      // get ready
+      const GRAPHQL_ENDPOINT = 'wss://tezgraph-mainnet.tezoslive.io/graphql';
+
+      const query = `subscription {
+  transactionAdded{
+    origin
+    source
+    destination
+    amount
+    metadata {
+      balance_updates {
+        kind
+        change
+        origin
+        contract
+        category
+        delegate
+        cycle
+      }
+      internal_operation_results {
+        kind
+        source
+        nonce
+        result {
+          status
+          consumed_gas
+          consumed_milligas
+          errors
+        }
+      }
+      operation_result {
+        balance_updates {
+          kind
+          change
+          origin
+          contract
+          category
+          delegate
+          cycle
+        }
+        originated_contracts
+        storage_size
+        paid_storage_size_diff
+        big_map_diff {
+          action
+        }
+        lazy_storage_diff {
+          kind
+          id
+        }
+        status
+        consumed_gas
+        consumed_milligas
+        errors
+        storage
+        allocated_destination_contract
+      }
+    }
+  }
+}
+`;
+
+      // set up the client, which can be reused
+      const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
+        reconnect: true,
+        lazy: true, // only connect when there is a query
+        connectionCallback: (error) => {
+          error && console.error(error);
+        },
+      });
+
+      // make the actual request
+      client.request({ query });
+
+      // the above doesn't do much though
+
+      // call subscription.unsubscribe() later to clean up
+       client
+        .request({ query })
+        // so lets actually do something with the response
+        .subscribe({
+          next({ data }) {
+            if (data) {
+              console.log('We got something!', data);
+            }
+          },
+        });
+
+    },
+
     async queryTokensNext() {
       if (
         this.queryResponseTokens[this.queryResponseTokens.length - 1].cursor ===
