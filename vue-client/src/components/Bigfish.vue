@@ -230,9 +230,8 @@
 
         <v-card-text class="black--text">
           <div
-            v-for="(
-              tokenBigmapDetailValue, tokenBigmapDetailKey
-            ) in tokenBigmapDetails"
+            v-for="(tokenBigmapDetailValue,
+            tokenBigmapDetailKey) in tokenBigmapDetails"
             v-bind:key="tokenBigmapDetailKey"
             class="text-overline"
           >
@@ -244,27 +243,25 @@
             <div
               v-if="
                 typeof tokenBigmapDetailValue === 'object' &&
-                tokenBigmapDetailValue !== null
+                  tokenBigmapDetailValue !== null
               "
             >
               <div
-                v-for="(
-                  nestedTokenObjectValue, nestedTokenObjectKey
-                ) in tokenBigmapDetailValue"
+                v-for="(nestedTokenObjectValue,
+                nestedTokenObjectKey) in tokenBigmapDetailValue"
                 v-bind:key="nestedTokenObjectValue"
                 class="text-overline"
               >
                 <div
                   v-if="
                     typeof nestedTokenObjectValue === 'object' &&
-                    nestedTokenObjectValue !== null
+                      nestedTokenObjectValue !== null
                   "
                 >
                   <h3>{{ nestedTokenObjectKey }}</h3>
                   <div
-                    v-for="(
-                      nestedNestedTokenObjectValue, nestedNestedTokenobjectKey
-                    ) in nestedTokenObjectValue"
+                    v-for="(nestedNestedTokenObjectValue,
+                    nestedNestedTokenobjectKey) in nestedTokenObjectValue"
                     v-bind:key="nestedNestedTokenObjectValue"
                     class="text-overline"
                   >
@@ -273,11 +270,15 @@
                   </div>
                 </div>
                 <div v-else>
+
                   <h5>{{ nestedTokenObjectKey }}</h5>
                   <p>
                     {{
                       nestedTokenObjectValue ? nestedTokenObjectValue : 'null'
-                    }}
+                    }}     
+                  <v-btn v-if="nestedTokenObjectKey.includes('_address')">
+                    Subscribe
+                  </v-btn>
                   </p>
                 </div>
               </div>
@@ -292,9 +293,7 @@
           <h3>Raw JSON:</h3>
           <p>{{ tokenBigmapDetails }}</p>
         </v-card-text>
-
         <v-divider></v-divider>
-
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="primary" text @click="operationDetailsDialog = false">
@@ -333,8 +332,8 @@ export default {
       operationsPaginationDetails: {
         address: '',
         sourceAfterCursor: '',
-        destinationAfterCursor: '',
-      },
+        destinationAfterCursor: ''
+      }
     };
   },
   methods: {
@@ -353,7 +352,7 @@ export default {
         throw new Error('Error');
       }
       const bigfishArray = [];
-      res.data.forEach((element) => {
+      res.data.forEach(element => {
         let bigfishObj = element;
         bigfishObj.usdPrice =
           (element.transaction_operation.amount / 1000000) *
@@ -432,9 +431,9 @@ export default {
       const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
         reconnect: true,
         lazy: true, // only connect when there is a query
-        connectionCallback: (error) => {
+        connectionCallback: error => {
           error && console.error(error);
-        },
+        }
       });
 
       // make the actual request
@@ -443,7 +442,7 @@ export default {
       // the above doesn't do much though
 
       // call subscription.unsubscribe() later to clean up
-       client
+      client
         .request({ query })
         // so lets actually do something with the response
         .subscribe({
@@ -451,9 +450,8 @@ export default {
             if (data) {
               console.log('We got something!', data);
             }
-          },
+          }
         });
-
     },
 
     async queryTokensNext() {
@@ -463,14 +461,15 @@ export default {
       ) {
         throw new Error('Error');
       }
-      const nextCursor =
-        this.queryResponseTokens[this.queryResponseTokens.length - 1].cursor;
+      const nextCursor = this.queryResponseTokens[
+        this.queryResponseTokens.length - 1
+      ].cursor;
       this.queryResponseTokens = null;
       this.loading = true;
       const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
         contract_metadata: this.contractMetadataQueryBoolean,
         contract_origination: this.originationQueryBoolean,
-        after: nextCursor,
+        after: nextCursor
       });
       if (!res) {
         throw new Error('Error');
@@ -478,7 +477,7 @@ export default {
       this.queryResponseTokens = res.data.data;
       this.loading = false;
       return res.data;
-    },
-  },
+    }
+  }
 };
 </script>
