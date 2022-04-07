@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <p class="text-center mt-5">RECENT LEDGERS</p>
+      <p class="text-center mt-5 mb-0">RECENT LEDGERS</p>
     </div>
     <v-card height="100%" tile>
       <div>

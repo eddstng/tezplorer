@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <p class="text-center mt-5">SUBSCRIPTION LEDGERS</p>
+      <p class="text-center mt-5 mb-0">SUBSCRIPTION LEDGERS</p>
     </div>
     <v-card height="100%" tile>
       <div>
@@ -15,56 +15,93 @@
               <span class="mx-auto">SUBSCRIPTION FILTERS</span>
               <br />
             </v-system-bar>
-            <br />
             <v-text-field
               class="ml-3 mr-3"
               v-model="tezosAccountAddress"
-              :counter="10"
+              :counter="36"
               label="Tezos Account Address"
               required
             ></v-text-field>
-
             <br />
-
+            <h3 class="ml-6 mb-2">Operation Kind</h3>
             <input
-              class="ml-3 mb-3"
+              class="ml-7 mb-2"
               type="checkbox"
+              :disabled="true"
               v-model="delegationSubscription"
             />
             <label> Delegation</label>
-
             <br />
             <input
-              class="ml-3 mb-3"
+              class="ml-7 mb-2"
               type="checkbox"
+              :disabled="true"
               v-model="endorsementSubscription"
             />
             <label> Endorsement</label>
             <br />
-
             <input
-              class="ml-3 mb-3"
+              class="ml-7 mb-2"
               type="checkbox"
+              :disabled="true"
               v-model="originationSubscription"
             />
             <label> Origination</label>
             <br />
-
             <input
-              class="ml-3 mb-3"
+              class="ml-7 mb-2"
               type="checkbox"
+              :disabled="true"
               v-model="revealSubscription"
             />
             <label> Reveal</label>
             <br />
             <input
-              class="ml-3 mb-3"
+              class="ml-7 mb-2"
               type="checkbox"
               v-model="transactionSubscription"
             />
             <label> Transaction</label>
             <br />
-
+            <br />
+            <h3 class="ml-6">Replay</h3>
+            <p class="ml-6">(subscribe n blocks before current head)</p>
+            <input
+              class="ml-7 mb-2"
+              type="checkbox"
+              v-model="replay25"
+              v-on:click="setReplayFromBlockLevel(replay25)"
+            />
+            <label> 25</label>
+            <input
+              class="ml-7 mb-2"
+              type="checkbox"
+              v-model="replay25"
+              v-on:click="setReplayFromBlockLevel(replay25)"
+            />
+            <label> 25</label>
+            <input
+              class="ml-7 mb-2"
+              type="checkbox"
+              v-model="replay50"
+              v-on:click="setReplayFromBlockLevel(replay50)"
+            />
+            <label> 50</label>
+            <input
+              class="ml-7 mb-2"
+              type="checkbox"
+              v-model="replay75"
+              v-on:click="setReplayFromBlockLevel(replay75)"
+            />
+            <label> 75</label>
+            <input
+              class="ml-7 mb-2"
+              type="checkbox"
+              v-model="replay100"
+              v-on:click="setReplayFromBlockLevel(replay100)"
+            />
+            <label> 100</label>
+            <br />
             <br />
             <v-btn
               class="ml-15  "
@@ -77,8 +114,18 @@
             </v-btn>
             <br />
             <br />
-          </v-container>
 
+            <v-btn
+              class="ml-15  "
+              width="200px"
+              v-on:click="
+                unsubscribeToGraphQLAccountTransactions(tezosAccountAddress)
+              "
+            >
+              Unsubscribe
+            </v-btn>
+            <br />
+          </v-container>
           <v-card-actions> </v-card-actions>
         </v-card>
       </div>
@@ -92,8 +139,8 @@
         ></v-progress-circular>
       </div>
       <v-card
-        v-for="operation in subscriptionResults"
-        v-bind:key="operation.id"
+        v-for="(operation, index) in subscriptionResults"
+        v-bind:key="index"
         class="mx-auto mt-1"
         outlined
         max-width="800px"
@@ -101,10 +148,7 @@
         <v-list-item three-line>
           <v-list-item-content>
             <v-system-bar height="50px" dark color="primary">
-              <v-spacer>
-                {{ operation.transactionAdded.block.hash }}</v-spacer
-              >
-
+              <v-spacer> {{ operation.transactionAdded.block.hash }}</v-spacer>
               <v-spacer></v-spacer>
               <span>{{ operation.transactionAdded.block.header.level }}</span>
               <br />
@@ -117,64 +161,73 @@
                 tokenBigmapDetails = operation;
               "
             >
-                        <div
-            v-for="(tokenBigmapDetailValue,
-            tokenBigmapDetailKey) in operation.transactionAdded"
-            v-bind:key="tokenBigmapDetailKey"
-            class="text-overline"
-          >
-            <p>
-              --------------------------------------------------------------------
-            </p>
-
-            <h3>{{ tokenBigmapDetailKey }}</h3>
-            <div
-              v-if="
-                typeof tokenBigmapDetailValue === 'object' &&
-                  tokenBigmapDetailValue !== null
-              "
-            >
               <div
-                v-for="(nestedTokenObjectValue,
-                nestedTokenObjectKey) in tokenBigmapDetailValue"
-                v-bind:key="nestedTokenObjectValue"
+                v-for="(subscriptionResultValue,
+                subscriptionResultKey,
+                index) in operation.transactionAdded"
+                v-bind:key="index"
                 class="text-overline"
               >
+                <h3>{{ subscriptionResultKey }}</h3>
                 <div
                   v-if="
-                    typeof nestedTokenObjectValue === 'object' &&
-                      nestedTokenObjectValue !== null
+                    typeof subscriptionResultValue === 'object' &&
+                      subscriptionResultValue !== null
                   "
                 >
-                  <h3>{{ nestedTokenObjectKey }}</h3>
                   <div
-                    v-for="(nestedNestedTokenObjectValue,
-                    nestedNestedTokenobjectKey) in nestedTokenObjectValue"
-                    v-bind:key="nestedNestedTokenObjectValue"
+                    v-for="(nestedSubscriptionResultValue,
+                    nestedSubscriptionResultKey,
+                    index) in subscriptionResultValue"
+                    v-bind:key="index"
                     class="text-overline"
                   >
-                    <h5>{{ nestedNestedTokenobjectKey }}</h5>
-                    <p>{{ nestedNestedTokenObjectValue }}</p>
+                    <div
+                      v-if="
+                        typeof nestedSubscriptionResultValue === 'object' &&
+                          nestedSubscriptionResultValue !== null
+                      "
+                    >
+                      <h4>{{ nestedSubscriptionResultKey }}</h4>
+                      <div
+                        v-for="(nestedNestedSubscriptionResultValue,
+                        nestedNestedSubscriptionResultKey,
+                        index) in nestedSubscriptionResultValue"
+                        v-bind:key="index"
+                        class="text-overline"
+                      >
+                        <h5>{{ nestedNestedSubscriptionResultKey }}</h5>
+                        <p>
+                          {{
+                            nestedNestedSubscriptionResultValue === null
+                              ? 'null'
+                              : nestedNestedSubscriptionResultValue
+                          }}
+                        </p>
+                      </div>
+                    </div>
+                    <div v-else>
+                      <h5>{{ nestedSubscriptionResultKey }}</h5>
+                      <p>
+                        {{
+                          nestedSubscriptionResultValue === null
+                            ? 'null'
+                            : nestedSubscriptionResultValue
+                        }}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div v-else>
-
-                  <h5>{{ nestedTokenObjectKey }}</h5>
                   <p>
                     {{
-                      nestedTokenObjectValue ? nestedTokenObjectValue : 'null'
-                    }}     
-                  <v-btn v-if="nestedTokenObjectKey.includes('_address')">
-                    Subscribe
-                  </v-btn>
+                      subscriptionResultValue === null
+                        ? 'null'
+                        : subscriptionResultValue
+                    }}
                   </p>
                 </div>
               </div>
-            </div>
-            <div v-else>
-              <p>{{ tokenBigmapDetailValue }}</p>
-            </div>
-          </div>
             </div>
           </v-list-item-content>
         </v-list-item>
@@ -183,21 +236,19 @@
   </div>
 </template>
 
-<style scoped>
-.contract-metadata-banner {
-  margin-top: -10px;
-}
-.v-system-bar {
-  font-size: 18px;
-}
-</style>
+<style scoped></style>
 <script>
 import { SubscriptionClient } from 'graphql-subscriptions-client';
 
 export default {
   data() {
     return {
-      loading:false,
+      replay25: false,
+      replay50: false,
+      replay75: false,
+      replay100: false,
+      loading: false,
+      subscription: null,
       subscriptionResults: [],
       tezosAccountAddress: '',
       contractMetadataQueryBoolean: false,
@@ -210,8 +261,15 @@ export default {
   },
   methods: {
     testfunc(data) {
-                    this.loading = false;
+      this.loading = false;
       this.subscriptionResults.push(data);
+    },
+    setReplayFromBlockLevel(replayBlockLevelChoice) {
+      this.replay25 = false;
+      this.replay50 = false;
+      this.replay75 = false;
+      this.replay100 = false;
+      this[replayBlockLevelChoice] = true;
     },
     async subscribeToGraphQLAccountTransactions(addressString) {
       this.loading = true;
@@ -222,78 +280,76 @@ export default {
 
       const query = `
       subscription {
-  transactionAdded(
-    // replayFromBlockLevel: 2257332
-    filter: {
-      or: [
-        { destination: { equalTo: "${addressString}" } }
-        { source: { equalTo: "${addressString}" } }
-      ]
-    }
-  ) {
-    origin
-    source
-    destination
-    amount
-    block {
-      header {
-        level
-        timestamp
-      }
-      hash
-    }
-    metadata {
-      balance_updates {
-        kind
-        change
-        origin
-        contract
-        category
-        delegate
-        cycle
-      }
-      internal_operation_results {
-        kind
-        source
-        nonce
-        result {
-          status
-          consumed_gas
-          consumed_milligas
-          errors
-        }
-      }
-      operation_result {
-        balance_updates {
-          kind
-          change
+        transactionAdded(
+          filter: {
+            or: [
+              { destination: { equalTo: "${addressString}" } }
+              { source: { equalTo: "${addressString}" } }
+            ]
+          }
+        ) {
           origin
-          contract
-          category
-          delegate
-          cycle
+          source
+          destination
+          amount
+          block {
+            header {
+              level
+              timestamp
+            }
+            hash
+          }
+          metadata {
+            balance_updates {
+              kind
+              change
+              origin
+              contract
+              category
+              delegate
+              cycle
+            }
+            internal_operation_results {
+              kind
+              source
+              nonce
+              result {
+                status
+                consumed_gas
+                consumed_milligas
+                errors
+              }
+            }
+            operation_result {
+              balance_updates {
+                kind
+                change
+                origin
+                contract
+                category
+                delegate
+                cycle
+              }
+              originated_contracts
+              storage_size
+              paid_storage_size_diff
+              big_map_diff {
+                action
+              }
+              lazy_storage_diff {
+                kind
+                id
+              }
+              status
+              consumed_gas
+              consumed_milligas
+              errors
+              storage
+              allocated_destination_contract
+            }
+          }
         }
-        originated_contracts
-        storage_size
-        paid_storage_size_diff
-        big_map_diff {
-          action
-        }
-        lazy_storage_diff {
-          kind
-          id
-        }
-        status
-        consumed_gas
-        consumed_milligas
-        errors
-        storage
-        allocated_destination_contract
       }
-    }
-  }
-}
-
     `;
 
       // set up the client, which can be reused
@@ -316,13 +372,12 @@ export default {
 
       const testfunc = this.testfunc;
       // call subscription.unsubscribe() later to clean up
-      client
+      this.subscription = client
         .request({ query })
         // so lets actually do something with the response
         .subscribe({
           next({ data }) {
             if (data) {
-
               testfunc(data);
               console.log(JSON.stringify(data));
             }
