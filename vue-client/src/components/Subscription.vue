@@ -69,36 +69,36 @@
             <input
               class="ml-7 mb-2"
               type="checkbox"
-              v-model="replay25"
-              v-on:click="setReplayFromBlockLevel(replay25)"
+              v-model="replay0"
+              v-on:click="setReplayFromLevelBoolean(replay0)"
             />
-            <label> 25</label>
+            <label> 0</label>
             <input
               class="ml-7 mb-2"
               type="checkbox"
               v-model="replay25"
-              v-on:click="setReplayFromBlockLevel(replay25)"
+              v-on:click="setReplayFromLevelBoolean(replay25)"
             />
             <label> 25</label>
             <input
               class="ml-7 mb-2"
               type="checkbox"
               v-model="replay50"
-              v-on:click="setReplayFromBlockLevel(replay50)"
+              v-on:click="setReplayFromLevelBoolean(replay50)"
             />
             <label> 50</label>
             <input
               class="ml-7 mb-2"
               type="checkbox"
               v-model="replay75"
-              v-on:click="setReplayFromBlockLevel(replay75)"
+              v-on:click="setReplayFromLevelBoolean(replay75)"
             />
             <label> 75</label>
             <input
               class="ml-7 mb-2"
               type="checkbox"
               v-model="replay100"
-              v-on:click="setReplayFromBlockLevel(replay100)"
+              v-on:click="setReplayFromLevelBoolean(replay100)"
             />
             <label> 100</label>
             <br />
@@ -239,10 +239,12 @@
 <style scoped></style>
 <script>
 import { SubscriptionClient } from 'graphql-subscriptions-client';
+import axios from 'axios';
 
 export default {
   data() {
     return {
+      replay0: true,
       replay25: false,
       replay50: false,
       replay75: false,
@@ -264,23 +266,42 @@ export default {
       this.loading = false;
       this.subscriptionResults.push(data);
     },
-    setReplayFromBlockLevel(replayBlockLevelChoice) {
+    setReplayFromLevelBoolean(desiredReplayBlockLevel) {
+      this.replay0 = false;
       this.replay25 = false;
       this.replay50 = false;
       this.replay75 = false;
       this.replay100 = false;
-      this[replayBlockLevelChoice] = true;
+      this[desiredReplayBlockLevel] = true;
+    },
+   async getReplayFromLevelArgument() {
+
+      const res = await axios.get(`https://api.tzkt.io/v1/head`);
+      if (!res) {
+        throw new Error('Error');
+      }
+      switch (true) {
+        case this.replay25:
+          return `replayFromBlockLevel: ${res.data.level - 25}`;
+        case this.replay50:
+          return `replayFromBlockLevel: ${res.data.level - 50}`;
+        case this.replay75:
+          return `replayFromBlockLevel: ${res.data.level - 75}`;
+        case this.replay100:
+          return `replayFromBlockLevel: ${res.data.level - 100}`;
+        default:
+          return '';
+      }
     },
     async subscribeToGraphQLAccountTransactions(addressString) {
+      const replayFromLevelrAgument = await this.getReplayFromLevelArgument()
       this.loading = true;
-      console.log('here');
       // get ready
       const GRAPHQL_ENDPOINT = 'wss://mainnet.tezgraph.tez.ie/graphql';
-      console.log('her2');
-
       const query = `
       subscription {
         transactionAdded(
+          ${replayFromLevelrAgument}
           filter: {
             or: [
               { destination: { equalTo: "${addressString}" } }
@@ -354,7 +375,6 @@ export default {
 
       // set up the client, which can be reused
       console.log('here3');
-
       const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
         reconnect: true,
         lazy: true, // only connect when there is a query
