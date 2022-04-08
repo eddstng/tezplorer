@@ -23,7 +23,7 @@
               required
             ></v-text-field>
             <br />
-            <h3 class="ml-6 mb-2">Operation Kind</h3>
+            <h3 class="text-center mb-2">Operation Kind</h3>
             <input
               class="ml-7 mb-2"
               type="checkbox"
@@ -64,8 +64,8 @@
             <label> Transaction</label>
             <br />
             <br />
-            <h3 class="ml-6">Replay</h3>
-            <p class="ml-6">(subscribe n blocks before current head)</p>
+            <h3 class="text-center">Replay</h3>
+            <p class="text-center">(subscribe n blocks before current head)</p>
             <input
               class="ml-7 mb-2"
               type="checkbox"
@@ -129,7 +129,48 @@
           <v-card-actions> </v-card-actions>
         </v-card>
       </div>
-      <div v-if="loading" align="center">
+      <v-alert
+        v-if="newResultsAlert"
+        class="mx-auto text-center mt-6"
+        max-width="800px"
+        height="100px"
+        type="info"
+      >
+        <div>
+          <h4 class="one">
+            NEW SUBSCRIPTION RESULTS
+          </h4>
+          <img class="mt-2 ml-7" src="../images/lighthouse.png" height="60px" />
+        </div>
+      </v-alert>
+      <v-alert
+        v-if="subscribedToAlert"
+        class="mx-auto text-center mt-6"
+        max-width="800px"
+        height="100px"
+        type="info"
+      >
+        <div>
+          <h4 class="two">
+            SUBSCRIBED TO <br />
+            {{ tezosAccountAddress }}
+          </h4>
+        </div>
+      </v-alert>
+      <v-alert
+        v-if="unsubscribedAlert"
+        class="mx-auto text-center mt-6"
+        max-width="800px"
+        height="100px"
+        type="info"
+      >
+        <div>
+          <h4 class="three">
+            UNSUBSCRIBED
+          </h4>
+        </div>
+      </v-alert>
+      <div v-if="loading" align="center mb-10">
         <br />
         <br />
         <v-progress-circular
@@ -139,7 +180,7 @@
         ></v-progress-circular>
       </div>
       <v-card
-        v-for="(operation, index) in subscriptionResults"
+        v-for="(operation, index) in subscriptionResults.slice().reverse()"
         v-bind:key="index"
         class="mx-auto mt-1"
         outlined
@@ -150,6 +191,18 @@
             <v-system-bar height="50px" dark color="primary">
               <v-spacer> {{ operation.transactionAdded.block.hash }}</v-spacer>
               <v-spacer></v-spacer>
+              <img
+                v-if="
+                  Date.now() -
+                    new Date(
+                      operation.transactionAdded.block.header.timestamp
+                    ) <
+                    15000 && flashingIcon
+                "
+                src="../images/new.png"
+                height="80px"
+              />
+
               <span>{{ operation.transactionAdded.block.header.level }}</span>
               <br />
             </v-system-bar>
@@ -236,7 +289,23 @@
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.one {
+  margin-top: 3%;
+  margin-left: 29%;
+  float: left;
+}
+.two {
+  margin-top: 2%;
+  margin-left: 18%;
+  float: left;
+}
+.three {
+  margin-top: 3%;
+  margin-left: 37%;
+  float: left;
+}
+</style>
 <script>
 import { SubscriptionClient } from 'graphql-subscriptions-client';
 import axios from 'axios';
@@ -244,6 +313,11 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      newResultsAlert: false,
+      subscribedToAlert: false,
+      unsubscribedAlert: false,
+      flashingIcon: false,
+      subscriptionClient: null,
       replay0: true,
       replay25: false,
       replay50: false,
@@ -262,9 +336,33 @@ export default {
     };
   },
   methods: {
-    testfunc(data) {
+    sleep(ms) {
+      return new Promise(resolve => {
+        setTimeout(resolve, ms);
+      });
+    },
+    async pushDataToSubscriptionResults(data) {
       this.loading = false;
+      this.flashingIcon = true;
+      this.subscribedToAlert = false;
+      this.unsubscribedAlert = false;
+      this.newResultsAlert = true;
       this.subscriptionResults.push(data);
+      await this.sleep(1000);
+      this.flashingIcon = false;
+      await this.sleep(500);
+      this.flashingIcon = true;
+      await this.sleep(1000);
+      this.flashingIcon = false;
+      await this.sleep(500);
+      this.flashingIcon = true;
+      await this.sleep(10000);
+      this.flashingIcon = false;
+      this.newResultsAlert = false;
+      if (this.subscription !== null) {
+        this.subscribedToAlert = true;
+      }
+
     },
     setReplayFromLevelBoolean(desiredReplayBlockLevel) {
       this.replay0 = false;
@@ -274,8 +372,7 @@ export default {
       this.replay100 = false;
       this[desiredReplayBlockLevel] = true;
     },
-   async getReplayFromLevelArgument() {
-
+    async getReplayFromLevelArgument() {
       const res = await axios.get(`https://api.tzkt.io/v1/head`);
       if (!res) {
         throw new Error('Error');
@@ -293,8 +390,18 @@ export default {
           return '';
       }
     },
+    unsubscribeToGraphQLAccountTransactions() {
+      if (this.subscription !== null) {
+        this.subscription.unsubscribe();
+      }
+      this.newResultsAlert = false;
+      this.subscribedToAlert = false;
+      this.unsubscribedAlert = true;
+      this.subscription = null;
+      return;
+    },
     async subscribeToGraphQLAccountTransactions(addressString) {
-      const replayFromLevelrAgument = await this.getReplayFromLevelArgument()
+      const replayFromLevelrAgument = await this.getReplayFromLevelArgument();
       this.loading = true;
       // get ready
       const GRAPHQL_ENDPOINT = 'wss://mainnet.tezgraph.tez.ie/graphql';
@@ -373,8 +480,6 @@ export default {
       }
     `;
 
-      // set up the client, which can be reused
-      console.log('here3');
       const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
         reconnect: true,
         lazy: true, // only connect when there is a query
@@ -383,26 +488,18 @@ export default {
         }
       });
 
-      // make the actual request
       client.request({ query });
-
-      console.log('here5');
-
-      // the above doesn't do much though
-
-      const testfunc = this.testfunc;
-      // call subscription.unsubscribe() later to clean up
-      this.subscription = client
-        .request({ query })
-        // so lets actually do something with the response
-        .subscribe({
-          next({ data }) {
-            if (data) {
-              testfunc(data);
-              console.log(JSON.stringify(data));
-            }
+      const pushDataToSubscriptionResults = this.pushDataToSubscriptionResults;
+      this.newResultsAlert = false;
+      this.unsubscribedAlert = false;
+      this.subscribedToAlert = true;
+      this.subscription = client.request({ query }).subscribe({
+        next({ data }) {
+          if (data) {
+            pushDataToSubscriptionResults(data);
           }
-        });
+        }
+      });
     }
   }
 };
