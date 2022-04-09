@@ -5,59 +5,45 @@
     </div>
     <v-card height="100%" tile>
       <div>
-        <v-card style="position: fixed" class="mx-auto mt-9 float-left">
+        <v-card
+          width="350px"
+          style="position: fixed"
+          class="mx-auto mt-9 float-left"
+        >
           <v-container class="px-0" fluid>
             <v-system-bar height="50px" dark color="primary">
-              <span class="mx-auto">LEDGER FILTERS</span>
+              <span class="mx-auto">BIG FISH</span>
               <br />
             </v-system-bar>
             <br />
-            <v-btn
-              width="350px"
-              v-model="contractMetadataQueryBoolean"
-              v-on:click="
-                contractMetadataQueryBoolean = !contractMetadataQueryBoolean
-              "
-            >
-              Contract Metadata: {{ contractMetadataQueryBoolean }}
-            </v-btn>
-            <br />
             <br />
 
-            <v-btn
-              width="350px"
-              v-model="originationQueryBoolean"
-              v-on:click="originationQueryBoolean = !originationQueryBoolean"
-            >
-              Origination Data: {{ originationQueryBoolean }}
+            <img
+              v-if="queryResponseBigfish"
+              class="pl-15 ml-15"
+              src="../images/bigfish.png"
+              height="100px"
+            />
+            <img
+              v-if="!queryResponseBigfish"
+              class="pl-15 ml-15"
+              src="../images/bigfish_black.png"
+              height="100px"
+            />
+            <br />
+            <br />
+            <br />
+            <v-btn class="ml-15" width="200px" v-on:click="getRecentBigfish()">
+              Explore
             </v-btn>
             <br />
             <br />
-            <br />
-            <v-btn
-              class="ml-15"
-              width="200px"
-              v-model="checkbox"
-              v-on:click="getRecentBigfish()"
-            >
-              Get Fish
-            </v-btn>
-            <br />
-            <br />
-            <v-btn
-              class="ml-15"
-              width="200px"
-              v-model="checkbox"
-              v-on:click="subscribeToGraphQL()"
-            >
-              Get Sub
-            </v-btn>
           </v-container>
-
           <v-card-actions> </v-card-actions>
         </v-card>
       </div>
       <div v-if="loading" align="center">
+        <br />
         <br />
         <br />
 
@@ -68,7 +54,7 @@
         ></v-progress-circular>
       </div>
       <v-card
-        v-for="operation in queryResponseTokens"
+        v-for="operation in queryResponseBigfish"
         v-bind:key="operation.id"
         class="mx-auto mt-1"
         outlined
@@ -215,12 +201,6 @@
           </v-list-item-content>
         </v-list-item>
       </v-card>
-      <div class="text-center mt-8 mb-8" v-if="queryResponseTokens">
-        <v-btn class="ml-3 mr-3" height="55px"> Prev </v-btn>
-        <v-btn class="ml-3 mr-3" height="55px" v-on:click="queryTokensNext()">
-          Next
-        </v-btn>
-      </div>
     </v-card>
     <v-dialog v-model="operationDetailsDialog" width="1200" font-color="black">
       <v-card>
@@ -270,15 +250,17 @@
                   </div>
                 </div>
                 <div v-else>
-
                   <h5>{{ nestedTokenObjectKey }}</h5>
                   <p>
                     {{
                       nestedTokenObjectValue ? nestedTokenObjectValue : 'null'
-                    }}     
-                  <v-btn v-if="nestedTokenObjectKey.includes('_address')">
-                    Subscribe
-                  </v-btn>
+                    }}
+                    <v-btn
+                      v-if="nestedTokenObjectKey.includes('_address')"
+                      v-on:click="subscribeToGraphQLAccountTransactions(nestedTokenObjectValue);"
+                    >
+                      Subscribe
+                    </v-btn>
                   </p>
                 </div>
               </div>
@@ -315,38 +297,31 @@
 </style>
 <script>
 import axios from 'axios';
-import { SubscriptionClient } from 'graphql-subscriptions-client';
 
 export default {
   data() {
     return {
       contractMetadataQueryBoolean: false,
       originationQueryBoolean: false,
-      checkbox: true,
       loading: false,
       operationDetailsDialog: false,
-      queryResponseTokens: null,
-      userInputAddress: '',
-      tokenBigmapDetails: null,
-      operationDetailsiDalog: false,
-      operationsPaginationDetails: {
-        address: '',
-        sourceAfterCursor: '',
-        destinationAfterCursor: ''
-      }
+      queryResponseBigfish: null,
+      tokenBigmapDetails: null
     };
   },
   methods: {
+    subscribeToGraphQLAccountTransactions(address) {
+     this.operationDetailsDialog = false;
+     this.$store.commit('setSubscriptionAddress', address)
+      this.$root.$emit('changeTabToSubscription');
+      this.$root.$emit('subscribeToGraphQLAccountTransactions');
+    },
     async getRecentBigfish() {
-      this.queryResponseTokens = null;
+      this.queryResponseBigfish = null;
       this.loading = true;
       const xtzUsdPrice = await axios.get(
         'https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd'
       );
-      console.log(xtzUsdPrice.data.tezos.usd);
-      console.log(xtzUsdPrice.data.tezos.usd);
-      console.log(xtzUsdPrice.data.tezos.usd);
-
       const res = await axios.get(`http://localhost:8080/recent/bigfish`);
       if (!res) {
         throw new Error('Error');
@@ -359,125 +334,10 @@ export default {
           xtzUsdPrice.data.tezos.usd;
         bigfishArray.push(bigfishObj);
       });
-      this.queryResponseTokens = res.data;
-      this.loading = false;
-
-      return res.data;
-    },
-    async subscribeToGraphQL() {
-      // get ready
-      const GRAPHQL_ENDPOINT = 'wss://tezgraph-mainnet.tezoslive.io/graphql';
-
-      const query = `subscription {
-  transactionAdded{
-    origin
-    source
-    destination
-    amount
-    metadata {
-      balance_updates {
-        kind
-        change
-        origin
-        contract
-        category
-        delegate
-        cycle
-      }
-      internal_operation_results {
-        kind
-        source
-        nonce
-        result {
-          status
-          consumed_gas
-          consumed_milligas
-          errors
-        }
-      }
-      operation_result {
-        balance_updates {
-          kind
-          change
-          origin
-          contract
-          category
-          delegate
-          cycle
-        }
-        originated_contracts
-        storage_size
-        paid_storage_size_diff
-        big_map_diff {
-          action
-        }
-        lazy_storage_diff {
-          kind
-          id
-        }
-        status
-        consumed_gas
-        consumed_milligas
-        errors
-        storage
-        allocated_destination_contract
-      }
-    }
-  }
-}
-`;
-
-      // set up the client, which can be reused
-      const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
-        reconnect: true,
-        lazy: true, // only connect when there is a query
-        connectionCallback: error => {
-          error && console.error(error);
-        }
-      });
-
-      // make the actual request
-      client.request({ query });
-
-      // the above doesn't do much though
-
-      // call subscription.unsubscribe() later to clean up
-      client
-        .request({ query })
-        // so lets actually do something with the response
-        .subscribe({
-          next({ data }) {
-            if (data) {
-              console.log('We got something!', data);
-            }
-          }
-        });
-    },
-
-    async queryTokensNext() {
-      if (
-        this.queryResponseTokens[this.queryResponseTokens.length - 1].cursor ===
-        undefined
-      ) {
-        throw new Error('Error');
-      }
-      const nextCursor = this.queryResponseTokens[
-        this.queryResponseTokens.length - 1
-      ].cursor;
-      this.queryResponseTokens = null;
-      this.loading = true;
-      const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
-        contract_metadata: this.contractMetadataQueryBoolean,
-        contract_origination: this.originationQueryBoolean,
-        after: nextCursor
-      });
-      if (!res) {
-        throw new Error('Error');
-      }
-      this.queryResponseTokens = res.data.data;
+      this.queryResponseBigfish = res.data;
       this.loading = false;
       return res.data;
-    }
+    },
   }
 };
 </script>

@@ -12,7 +12,7 @@
         >
           <v-container class="px-0" fluid>
             <v-system-bar height="50px" dark color="primary">
-              <span class="mx-auto">SUBSCRIPTION FILTERS</span>
+              <span class="mx-auto">SUBSCRIPTION</span>
               <br />
             </v-system-bar>
             <v-text-field
@@ -153,7 +153,7 @@
         <div>
           <h4 class="two">
             SUBSCRIBED TO <br />
-            {{ tezosAccountAddress }}
+            {{ this.$store.state.subscriptionAddress }}
           </h4>
         </div>
       </v-alert>
@@ -170,7 +170,8 @@
           </h4>
         </div>
       </v-alert>
-      <div v-if="loading" align="center mb-10">
+      <div v-if="loading" align="center">
+        <br />
         <br />
         <br />
         <v-progress-circular
@@ -297,7 +298,7 @@
 }
 .two {
   margin-top: 2%;
-  margin-left: 18%;
+  margin-left: 19%;
   float: left;
 }
 .three {
@@ -311,6 +312,13 @@ import { SubscriptionClient } from 'graphql-subscriptions-client';
 import axios from 'axios';
 
 export default {
+  mounted() {
+    this.$root.$on('subscribeToGraphQLAccountTransactions', () => {
+      return this.subscribeToGraphQLAccountTransactions(
+        this.$store.state.subscriptionAddress
+      );
+    });
+  },
   data() {
     return {
       newResultsAlert: false,
@@ -362,7 +370,6 @@ export default {
       if (this.subscription !== null) {
         this.subscribedToAlert = true;
       }
-
     },
     setReplayFromLevelBoolean(desiredReplayBlockLevel) {
       this.replay0 = false;
@@ -398,12 +405,16 @@ export default {
       this.subscribedToAlert = false;
       this.unsubscribedAlert = true;
       this.subscription = null;
+      this.loading = false;
       return;
     },
     async subscribeToGraphQLAccountTransactions(addressString) {
+      this.loading = false;
+      this.loading = true;
+      this.$store.commit('setSubscriptionAddress', addressString);
+      this.tezosAccountAddress = addressString;
       const replayFromLevelrAgument = await this.getReplayFromLevelArgument();
       this.loading = true;
-      // get ready
       const GRAPHQL_ENDPOINT = 'wss://mainnet.tezgraph.tez.ie/graphql';
       const query = `
       subscription {
