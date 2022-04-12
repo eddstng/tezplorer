@@ -1,7 +1,7 @@
 <template>
   <div>
     <div>
-      <p class="text-center mt-5 mb-0">SUBSCRIPTION LEDGERS</p>
+      <p class="text-center mt-5 mb-0">SUBSCRIPTION</p>
     </div>
     <v-card height="100%" tile>
       <div>
@@ -27,32 +27,32 @@
             <input
               class="ml-7 mb-2"
               type="checkbox"
-              :disabled="true"
               v-model="delegationSubscription"
+              v-on:click="setSubscriptionOperationKind('delegationAdded')"
             />
             <label> Delegation</label>
             <br />
             <input
               class="ml-7 mb-2"
               type="checkbox"
-              :disabled="true"
               v-model="endorsementSubscription"
+              v-on:click="setSubscriptionOperationKind('endorsementAdded')"
             />
             <label> Endorsement</label>
             <br />
             <input
               class="ml-7 mb-2"
               type="checkbox"
-              :disabled="true"
               v-model="originationSubscription"
+              v-on:click="setSubscriptionOperationKind('originationAdded')"
             />
             <label> Origination</label>
             <br />
             <input
               class="ml-7 mb-2"
               type="checkbox"
-              :disabled="true"
               v-model="revealSubscription"
+              v-on:click="setSubscriptionOperationKind('revealAdded')"
             />
             <label> Reveal</label>
             <br />
@@ -60,6 +60,7 @@
               class="ml-7 mb-2"
               type="checkbox"
               v-model="transactionSubscription"
+              v-on:click="setSubscriptionOperationKind('transactionAdded')"
             />
             <label> Transaction</label>
             <br />
@@ -190,13 +191,13 @@
         <v-list-item three-line>
           <v-list-item-content>
             <v-system-bar height="50px" dark color="primary">
-              <v-spacer> {{ operation.transactionAdded.block.hash }}</v-spacer>
+              <v-spacer> {{ operation[subscriptionType].block.hash }}</v-spacer>
               <v-spacer></v-spacer>
               <img
                 v-if="
                   Date.now() -
                     new Date(
-                      operation.transactionAdded.block.header.timestamp
+                      operation[subscriptionType].block.header.timestamp
                     ) <
                     15000 && flashingIcon
                 "
@@ -204,7 +205,7 @@
                 height="80px"
               />
 
-              <span>{{ operation.transactionAdded.block.header.level }}</span>
+              <span>{{ operation[subscriptionType].block.header.level }}</span>
               <br />
             </v-system-bar>
             <div
@@ -218,7 +219,7 @@
               <div
                 v-for="(subscriptionResultValue,
                 subscriptionResultKey,
-                index) in operation.transactionAdded"
+                index) in operation[subscriptionType]"
                 v-bind:key="index"
                 class="text-overline"
               >
@@ -340,7 +341,8 @@ export default {
       endorsementSubscription: false,
       originationSubscription: false,
       revealSubscription: false,
-      transactionSubscription: true
+      transactionSubscription: true,
+      subscriptionType: ''
     };
   },
   methods: {
@@ -379,6 +381,15 @@ export default {
       this.replay100 = false;
       this[desiredReplayBlockLevel] = true;
     },
+    setSubscriptionOperationKind(subscriptionOperationKind) {
+      this.delegationSubscription = false;
+      this.endorsementSubscription = false;
+      this.originationSubscription = false;
+      this.revealSubscription = false;
+      this.transactionSubscription = false;
+      this[subscriptionOperationKind] = true;
+      this.subscriptionType = subscriptionOperationKind;
+    },
     async getReplayFromLevelArgument() {
       const res = await axios.get(`https://api.tzkt.io/v1/head`);
       if (!res) {
@@ -409,87 +420,31 @@ export default {
       return;
     },
     async subscribeToGraphQLAccountTransactions(addressString) {
-      this.loading = false;
+      if (addressString === "") {
+        return
+      }
+      this.unsubscribeToGraphQLAccountTransactions();
+      this.unsubscribedAlert = false;
       this.loading = true;
       this.$store.commit('setSubscriptionAddress', addressString);
       this.tezosAccountAddress = addressString;
-      const replayFromLevelrAgument = await this.getReplayFromLevelArgument();
+      const replayFromLevelArgument = await this.getReplayFromLevelArgument();
       this.loading = true;
       const GRAPHQL_ENDPOINT = 'wss://mainnet.tezgraph.tez.ie/graphql';
+      const transactionSubscriptionQuery = `transactionAdded(          ${replayFromLevelArgument}          filter: {        or: [          { destination: { equalTo: "${addressString}" } }          { source: { equalTo: "${addressString}" } }        ]      }        ) {          origin          source          destination          amount          block {            header {              level              timestamp            }            hash          }          metadata {            balance_updates {              kind              change              origin              contract              category              delegate              cycle            }            internal_operation_results {              kind              source              nonce              result {                status                consumed_gas                consumed_milligas                errors              }            }            operation_result {              balance_updates {                kind                change                origin                contract                category                delegate                cycle              }              originated_contracts              storage_size              paid_storage_size_diff              big_map_diff {                action              }              lazy_storage_diff {                kind                id              }              status              consumed_gas              consumed_milligas              errors              storage              allocated_destination_contract            }          }        }`;
+      const originationSubscriptionQuery = `originationAdded(    ${replayFromLevelArgument}       filter: {      source: {equalTo: "${addressString}"}    }  ) {    kind    block {      header {        level        timestamp      }      hash    }    metadata {      balance_updates {        kind        change        origin        contract        category        delegate        cycle      }      internal_operation_results {        kind        source        nonce        result {          status          consumed_gas          consumed_milligas          errors        }      }      operation_result {        balance_updates {          kind          change          origin          contract          category          delegate          cycle        }        originated_contracts        storage_size        paid_storage_size_diff        big_map_diff {          action        }        lazy_storage_diff {          kind          id        }        status        consumed_gas        consumed_milligas        errors      }    }  }`;
+      const endorsementSubscriptionQuery = `endorsementAdded(    ${replayFromLevelArgument}    filter: { delegate: { equalTo: "${addressString}" } }  ) {    kind    block {      header {        level        payload_hash        timestamp      }      hash    }    origin    metadata {      balance_updates {        kind        change        origin        contract        category        delegate        cycle      }      slots      delegate      endorsement_power    }    level    slot    round    block_payload_hash  }`
+      const revealSubscriptionQuery = ` revealAdded(   ${replayFromLevelArgument}     filter: { source: { equalTo: "${addressString}" } }  ) {    origin    source    fee    counter    gas_limit    storage_limit    source    public_key    block {      header {        level        timestamp      }      hash    }    metadata {      balance_updates {        kind        change        origin        contract        category        delegate        cycle      }      internal_operation_results {        kind        source        nonce        result {          status          consumed_gas          consumed_milligas          errors        }      }      operation_result {        status        consumed_gas        consumed_milligas        errors      }    }  }`
+      const delegationSubscriptionQuery = `  delegationAdded(    ${replayFromLevelArgument}    filter: { source: { equalTo: "${addressString}" } }  ) {    kind    origin    fee    counter    gas_limit    storage_limit    source    delegate    block {      header {        level        timestamp      }      hash    }    metadata {      balance_updates {        kind        change        origin        contract        category        delegate        cycle      }      operation_result {        status        consumed_gas        consumed_milligas        errors      }      internal_operation_results {        kind        source        nonce        result {          status          consumed_gas          consumed_milligas          errors        }      }    }  }`
       const query = `
       subscription {
-        transactionAdded(
-          ${replayFromLevelrAgument}
-          filter: {
-            or: [
-              { destination: { equalTo: "${addressString}" } }
-              { source: { equalTo: "${addressString}" } }
-            ]
-          }
-        ) {
-          origin
-          source
-          destination
-          amount
-          block {
-            header {
-              level
-              timestamp
-            }
-            hash
-          }
-          metadata {
-            balance_updates {
-              kind
-              change
-              origin
-              contract
-              category
-              delegate
-              cycle
-            }
-            internal_operation_results {
-              kind
-              source
-              nonce
-              result {
-                status
-                consumed_gas
-                consumed_milligas
-                errors
-              }
-            }
-            operation_result {
-              balance_updates {
-                kind
-                change
-                origin
-                contract
-                category
-                delegate
-                cycle
-              }
-              originated_contracts
-              storage_size
-              paid_storage_size_diff
-              big_map_diff {
-                action
-              }
-              lazy_storage_diff {
-                kind
-                id
-              }
-              status
-              consumed_gas
-              consumed_milligas
-              errors
-              storage
-              allocated_destination_contract
-            }
-          }
-        }
+        ${this.transactionSubscription ? transactionSubscriptionQuery : ''}
+        ${this.originationSubscription ? originationSubscriptionQuery : ''}
+        ${this.endorsementSubscription ? endorsementSubscriptionQuery : ''}
+        ${this.revealSubscription ? revealSubscriptionQuery : ''}
+        ${this.delegationSubscription ? delegationSubscriptionQuery : ''}
       }
-    `;
+      `;
 
       const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
         reconnect: true,

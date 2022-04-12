@@ -201,6 +201,18 @@
                     {{
                       nestedTokenObjectValue ? nestedTokenObjectValue : 'null'
                     }}
+                    <v-btn
+                      height="25px"
+                      v-if="nestedTokenObjectKey.includes('address')"
+                      class="ml-2 mb-1"
+                      v-on:click="
+                        subscribeToGraphQLAccountTransactions(
+                          nestedTokenObjectValue
+                        )
+                      "
+                    >
+                      Subscribe
+                    </v-btn>
                   </p>
                 </div>
               </div>
@@ -260,6 +272,12 @@ export default {
     };
   },
   methods: {
+    subscribeToGraphQLAccountTransactions(address) {
+      this.operationDetailsDialog = false;
+      this.$store.commit('setSubscriptionAddress', address);
+      this.$root.$emit('changeTabToSubscription');
+      this.$root.$emit('subscribeToGraphQLAccountTransactions');
+    },
     async getRecentLedgers() {
       this.queryResponseTokens = null;
       this.loading = true;
@@ -287,7 +305,7 @@ export default {
       ].cursor;
       this.queryResponseTokens = null;
       this.loading = true;
-    const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
+      const res = await axios.post(`http://localhost:8080/recent/ledgers`, {
         contract_metadata: this.contractMetadataQueryBoolean,
         contract_origination: this.originationQueryBoolean,
         after: nextCursor

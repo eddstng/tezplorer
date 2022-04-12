@@ -256,7 +256,9 @@
                       nestedTokenObjectValue ? nestedTokenObjectValue : 'null'
                     }}
                     <v-btn
+                      height="25px"
                       v-if="nestedTokenObjectKey.includes('_address')"
+                      class="ml-2 mb-1"
                       v-on:click="subscribeToGraphQLAccountTransactions(nestedTokenObjectValue);"
                     >
                       Subscribe
@@ -319,21 +321,10 @@ export default {
     async getRecentBigfish() {
       this.queryResponseBigfish = null;
       this.loading = true;
-      const xtzUsdPrice = await axios.get(
-        'https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd'
-      );
       const res = await axios.get(`http://localhost:8080/recent/bigfish`);
       if (!res) {
         throw new Error('Error');
       }
-      const bigfishArray = [];
-      res.data.forEach(element => {
-        let bigfishObj = element;
-        bigfishObj.usdPrice =
-          (element.transaction_operation.amount / 1000000) *
-          xtzUsdPrice.data.tezos.usd;
-        bigfishArray.push(bigfishObj);
-      });
       this.queryResponseBigfish = res.data;
       this.loading = false;
       return res.data;

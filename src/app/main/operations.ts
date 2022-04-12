@@ -1,3 +1,4 @@
+import axios from "axios";
 import { resData, runAxiosCall } from "./axios";
 
 export type operationNode = {
@@ -20,7 +21,7 @@ export type operationNode = {
   parameters: {
     entrypoint: string
   },
-  amount: string,
+  amount: number,
   destination: {
     address: string,
     contract_metadata: any
@@ -30,32 +31,6 @@ export type operationNode = {
     contract_metadata: any
   },
   cursor: string,
-  // bigmap_values: {
-  //   edges: [
-  //     {
-  //       node: {
-  //         kind: update,
-  //         key: {
-  //           int: 1146
-  //         },
-  //         contract: {
-  //           address: KT1DcrUC4rhnDkmvKDTykD3se7ZSwvqE1Rpr
-  //         }
-  //       }
-  //     },
-  //     {
-  //       node: {
-  //         kind: update,
-  //         key: {
-  //           bytes: 000031641295fb44cd0887a01789ca070b9e7357369c
-  //         },
-  //         contract: {
-  //           address: KT1DcrUC4rhnDkmvKDTykD3se7ZSwvqE1Rpr
-  //         }
-  //       }
-  //     }
-  //   ]
-  // },
 }
 
 type bigfishData = {
@@ -74,7 +49,7 @@ type bigfishData = {
     operation_hash: string | null,
     batch_position: number | null,
     internal_position: number | null,
-    amount: string,
+    amount: number,
     consumed_gas: string,
     consumed_milligas: string,
     storage_size: string,
@@ -165,7 +140,6 @@ export async function getRecentBigTransactions() {
 
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {
-    // console.log(`Error: ${axiosResponseErrors}`)
     if (axiosResponseData === null || axiosResponseData === undefined) {
       throw new Error(`${axiosResponseErrors}`)
     }
@@ -173,20 +147,13 @@ export async function getRecentBigTransactions() {
 
   const recentLedgersData = axiosResponseData.operations.edges
   const ledgersDataArray: any[] = [];
-
-  // const xtzUsdPrice: { data: { tezos: { usd: string } } } = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd')
-
+  const xtzUsdPrice = await axios.get(
+    'https://api.coingecko.com/api/v3/simple/price?ids=tezos&vs_currencies=usd'
+  );
 
   recentLedgersData.forEach((operation: any) => {
     const operatationRecord: operationNode = operation.node
     operatationRecord.cursor = operation.cursor
-
-    // console.log('===============');
-    // console.log(xtzUsdPrice.data.tezos.usd);
-    // console.log('===============');
-    // console.log((parseInt(operatationRecord.amount) / 1000000))
-    // console.log(parseInt(xtzUsdPrice.data.tezos.usd) * (parseInt(operatationRecord.amount) / 1000000))
-    // operatationRecord.usdPrice = parseInt(xtzUsdPrice.data.tezos.usd) * (parseInt(operatationRecord.amount) / 1000000)
     const bigfishData: bigfishData = {
       cursor: operatationRecord.cursor,
       block: {
@@ -208,9 +175,9 @@ export async function getRecentBigTransactions() {
         consumed_milligas: operatationRecord.metadata.operation_result.consumed_milligas,
         storage_size: operatationRecord.storage_size,
         entrypoint: operatationRecord.parameters.entrypoint,
-        //what casing do we want to use?
       },
-      usdPrice: null,
+      usdPrice: ((operatationRecord.amount / 1000000) *
+        xtzUsdPrice.data.tezos.usd),
     }
     ledgersDataArray.push(bigfishData);
 

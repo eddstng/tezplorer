@@ -105,7 +105,7 @@ export async function getRecentLedgers(params: LedgerParams
   let graphqlQuery = `query BigmapsQuery {
       bigmaps(
         filter: { annots: "%ledger" }
-        first: 5  
+        first: 25  
         order_by: { field: id, direction: desc }
         ${params.pagination_after ? `after: ${params.pagination_after}` : ""}
       ) {
@@ -143,7 +143,6 @@ export async function getRecentLedgers(params: LedgerParams
 
   // If Tezgraph returns an error, return error. 
   if (axiosResponseErrors !== undefined) {
-    // console.log(`Error: ${axiosResponseErrors}`)
     if (axiosResponseData === null || axiosResponseData === undefined) {
       throw new Error(`${axiosResponseErrors}`)
     }
