@@ -1,7 +1,7 @@
 import axios from "axios";
 import { resData, runAxiosCall } from "./axios";
 
-export type operationNode = {
+export type OperationNode = {
   batch_position: number,
   kind: string,
   hash: string,
@@ -33,7 +33,7 @@ export type operationNode = {
   cursor: string,
 }
 
-export type bigfishData = {
+export type BigfishData = {
   cursor: string,
   block: {
     hash: string,
@@ -152,9 +152,9 @@ export async function getRecentBigTransactions() {
   );
 
   recentLedgersData.forEach((operation: any) => {
-    const operatationRecord: operationNode = operation.node
+    const operatationRecord: OperationNode = operation.node
     operatationRecord.cursor = operation.cursor
-    const bigfishData: bigfishData = {
+    const bigfishData: BigfishData = {
       cursor: operatationRecord.cursor,
       block: {
         hash: operatationRecord.block.hash,

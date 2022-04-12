@@ -1,6 +1,6 @@
 import axios, { Method } from "axios";
-import { bigmapNode } from "./bigmaps";
-import { operationNode } from "./operations";
+import { BigmapNode } from "./bigmaps";
+import { OperationNode } from "./operations";
 const endpoint = "https://mainnet.staging.tezgraph.tez.ie/graphql";
 
 export type resData = {
@@ -10,7 +10,7 @@ export type resData = {
                 node: {
                     [key: string]: {
                         edges: {
-                            node: operationNode,
+                            node: OperationNode,
                             canonical_value: string,
                             michelson_value: string,
                         }[],
@@ -20,12 +20,12 @@ export type resData = {
         },
         bigmaps: {
             edges: {
-                node: bigmapNode,
+                node: BigmapNode,
             }[],
         },
         operations: {
             edges: {
-                node: operationNode
+                node: OperationNode
             }[]
         }
     },

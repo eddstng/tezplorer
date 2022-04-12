@@ -1,14 +1,14 @@
 import app from "../server"
 
 import request from "supertest"
-import { bigfishData } from "../app/main/operations"
+import { BigfishData } from "../app/main/operations"
 import { LedgerData } from "../app/main/bigmaps"
 
 describe("get /recent/bigfish", () => {
     it("returns bigfish data", async () => {
         const res = await request(app)
             .get('/recent/bigfish')
-        const bigfishData: bigfishData[] = res.body
+        const bigfishData: BigfishData[] = res.body
         expect(bigfishData.length).toBeGreaterThan(0)
         bigfishData.forEach((bigfishResult) => {
             expect(bigfishResult.usdPrice).toBeGreaterThan(0)

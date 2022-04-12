@@ -1,12 +1,6 @@
 import { runAxiosCall } from "./axios";
 
-export interface LedgerParams {
-  contract_metadata: boolean,
-  contract_origination: boolean,
-  pagination_after: string | undefined,
-}
-
-export type bigmapNode = {
+export type BigmapNode = {
   id: string,
   annots: string,
   block: {
@@ -41,6 +35,12 @@ export type bigmapNode = {
     }
   }
 };
+
+export interface LedgerParams {
+  contract_metadata: boolean,
+  contract_origination: boolean,
+  pagination_after: string | undefined,
+}
 
 export type LedgerData = {
   cursor: string,

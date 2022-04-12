@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { getRecentLedgers } from './bigmaps';
-import { LedgerParams } from './main';
+import { getRecentLedgers, LedgerParams} from './bigmaps';
 import { getRecentBigTransactions } from './operations';
 export const router: Router = Router();
 
@@ -13,7 +12,6 @@ router.post("/recent/ledgers", async (req, res) => {
     res.status(500).send(error);
   }
 });
-
 
 router.get('/recent/bigfish', async (req, res) => {
   try {
