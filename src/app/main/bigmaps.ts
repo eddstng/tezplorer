@@ -42,7 +42,7 @@ export type bigmapNode = {
   }
 };
 
-type LedgerData = {
+export type LedgerData = {
   cursor: string,
   annots: string,
   block: {

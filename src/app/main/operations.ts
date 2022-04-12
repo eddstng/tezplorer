@@ -33,7 +33,7 @@ export type operationNode = {
   cursor: string,
 }
 
-type bigfishData = {
+export type bigfishData = {
   cursor: string,
   block: {
     hash: string,
