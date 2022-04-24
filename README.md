@@ -36,3 +36,7 @@ The `BIG FISH` page allows the user to retrieve all of the recent transcation op
 
 #### Expanded Views
 Both the records displayed on the `BIG FISH` page and the `RECENT LEDGERS` page can be clicked and viewed in a pop-up window providing greater detail. 
+
+Every Tezos Account Address displayed in this window will have a `SUBSCRIBE` button beside it. If you click this button, you will be brought to the `SUBSCRIPTION` page and subscribed to the Tezos Account Address.
+
+<img src="./public/images/expanded-view.png">
