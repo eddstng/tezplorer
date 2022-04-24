@@ -79,7 +79,7 @@ const contractMetadataQueryBlock = `contract_metadata {
 
 const contractOriginationQueryBlock = `operations(
     first: 1
-    filter: { kind: origination, relationship_type: contract }
+    filter: { kind: origination, relationship_type: originated_contract }
   ) {
     edges {
       node {
