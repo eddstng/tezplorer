@@ -1,5 +1,5 @@
 # Tezplorer
-Powered by [Tezgraph](www.tezgraph.com)
+Powered by [Tezgraph](http://www.tezgraph.com)
 
 ## Run Project Locally
 In one terminal:
