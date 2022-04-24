@@ -342,7 +342,7 @@ export default {
       originationSubscription: false,
       revealSubscription: false,
       transactionSubscription: true,
-      subscriptionType: ''
+      subscriptionType: 'transactionAdded'
     };
   },
   methods: {
