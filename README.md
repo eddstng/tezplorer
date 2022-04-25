@@ -10,6 +10,7 @@ npm run dev
 In another terminal:
 ```
 cd vue-client
+npm install
 npm run serve
 ```
 Go to `http://localhost:3000/`
